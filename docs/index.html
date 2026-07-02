@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moving Sale — Medellín</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <h1>Moving Sale — Medellín</h1>
+    <div class="controls">
+      <select id="categoryFilter"></select>
+      <button class="cart-toggle secondary" id="cartToggle">
+        Cart <span class="cart-count" id="cartCount">0</span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <div class="grid" id="grid"></div>
+  </main>
+
+  <div class="overlay" id="overlay"></div>
+
+  <div class="cart-drawer" id="cartDrawer">
+    <button class="secondary" id="cartClose" style="align-self:flex-end;">Close ✕</button>
+    <h2>Your cart</h2>
+    <div id="cartItems"></div>
+
+    <form class="checkout-form" id="checkoutForm">
+      <label for="buyerName">Your name</label>
+      <input id="buyerName" type="text" required>
+      <label for="buyerPhone">Your phone (WhatsApp preferred)</label>
+      <input id="buyerPhone" type="tel" required>
+      <button type="submit" id="checkoutBtn">Send request</button>
+    </form>
+
+    <div class="confirmation" id="confirmation" style="display:none;">
+      Thanks! Your request has been sent. Jordan will reach out on WhatsApp to confirm availability and arrange payment/pickup.
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

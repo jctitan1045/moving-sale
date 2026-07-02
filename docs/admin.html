@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moving Sale — Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="admin-token-gate" id="gate">
+    <h2>Admin access</h2>
+    <p>Enter your admin token to review and publish listings.</p>
+    <input id="tokenInput" type="password" placeholder="Admin token" style="width:100%;margin-bottom:0.75rem;">
+    <button id="unlockBtn" style="width:100%;">Unlock</button>
+  </div>
+
+  <div id="adminBody" style="display:none;">
+    <header>
+      <h1>Moving Sale — Admin</h1>
+      <div class="controls">
+        <button class="secondary" id="refreshBtn">Refresh</button>
+        <div style="margin-left:auto;display:flex;gap:0.5rem;align-items:center;">
+          <label for="fxRate" style="font-size:0.85rem;">COP per USD:</label>
+          <input id="fxRate" type="number" style="width:6rem;">
+          <button class="secondary" id="saveFxRateBtn">Save rate</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="admin-section">
+        <h2>Pending drafts</h2>
+        <div id="drafts"></div>
+      </div>
+
+      <div class="admin-section">
+        <h2>Published / sold listings</h2>
+        <div id="published"></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

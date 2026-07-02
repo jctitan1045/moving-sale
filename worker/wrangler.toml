@@ -1,0 +1,11 @@
+name = "moving-sale-worker"
+main = "worker.js"
+compatibility_date = "2026-07-01"
+
+kv_namespaces = [
+  { binding = "KV", id = "5aef467b8ac24451b47e7354e6adc319" }
+]
+
+[vars]
+ALLOWED_ORIGIN = "https://jctitan1045.github.io"
+STOREFRONT_URL = "https://jctitan1045.github.io/moving-sale"
