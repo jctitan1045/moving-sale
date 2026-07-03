@@ -51,6 +51,13 @@ function fmtUsd(n) {
   return `$${Number(n).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} USD`;
 }
 
+// Shorthand for chat text, e.g. 15000 -> "15k", 1250000 -> "1.25M"
+function fmtCopShort(n) {
+  if (n >= 1000000) return `${Number((n / 1000000).toFixed(2))}M`;
+  if (n >= 1000) return `${Number((n / 1000).toFixed(1))}k`;
+  return `${n}`;
+}
+
 // Fallbacks handle older listings saved before bilingual fields existed.
 function titleEn(l) { return l.title_en || l.title || ""; }
 function titleEs(l) { return l.title_es || l.title || l.title_en || ""; }
@@ -147,7 +154,8 @@ function whatsAppCheckoutMessage() {
   const lines = Object.entries(cart).map(([id, qty]) => {
     const listing = listings.find((l) => l.id === id);
     const name = listing ? titleEn(listing) : id;
-    return qty > 1 ? `- ${name} x${qty}` : `- ${name}`;
+    const price = listing ? `(${fmtCopShort(listing.price_cop_max)} COP, obo)` : "";
+    return qty > 1 ? `- ${name} x${qty} ${price}` : `- ${name} ${price}`;
   });
   return `Hi! I'm interested in these items from the moving sale:\n${lines.join("\n")}\n\nDo you still have them?`;
 }
