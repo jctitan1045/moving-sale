@@ -63,8 +63,8 @@ function renderListings() {
         <h3>${escapeHtml(l.title)}</h3>
         <p>${escapeHtml(l.description)}</p>
         <div class="price">
-          ${fmtCop((l.price_cop_min + l.price_cop_max) / 2)}
-          <div class="usd">${fmtUsd((l.price_usd_min + l.price_usd_max) / 2)} · range ${fmtCop(l.price_cop_min)}–${fmtCop(l.price_cop_max)}</div>
+          ${fmtCop(l.price_cop_max)} <span class="obo">OBO</span>
+          <div class="usd">${fmtUsd(l.price_usd_max)}</div>
         </div>
         <button ${l.status === "sold" ? "disabled" : ""} onclick="addToCart('${l.id}')">
           ${l.status === "sold" ? "Sold" : "Add to cart"}

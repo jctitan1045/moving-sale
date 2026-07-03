@@ -49,8 +49,8 @@ function draftCard(l) {
           <div><label>Condition</label><select class="f-condition">${selectOptions(CONDITIONS, l.condition)}</select></div>
         </div>
         <div class="row">
-          <div><label>Price COP min</label><input class="f-price-min" type="number" value="${l.price_cop_min}"></div>
-          <div><label>Price COP max</label><input class="f-price-max" type="number" value="${l.price_cop_max}"></div>
+          <div><label>Your floor (private, not shown to buyers)</label><input class="f-price-min" type="number" value="${l.price_cop_min}"></div>
+          <div><label>Asking price COP (shown as OBO)</label><input class="f-price-max" type="number" value="${l.price_cop_max}"></div>
         </div>
         <div class="admin-actions">
           <button onclick="publishDraft('${l.id}')">Publish</button>
@@ -69,7 +69,7 @@ function publishedCard(l) {
       <div class="admin-fields">
         <div><strong>${escapeHtml(l.title)}</strong> <span class="badge ${l.status === "sold" ? "sold" : ""}">${l.status}</span></div>
         <div>${escapeHtml(l.description)}</div>
-        <div>${l.price_cop_min.toLocaleString()}–${l.price_cop_max.toLocaleString()} COP</div>
+        <div>Asking ${l.price_cop_max.toLocaleString()} COP OBO <span style="color:var(--muted);font-size:0.8rem;">(floor: ${l.price_cop_min.toLocaleString()})</span></div>
         <div class="admin-actions">
           ${l.status !== "sold" ? `<button onclick="markSold('${l.id}')">Mark sold</button>` : `<button class="secondary" onclick="markAvailable('${l.id}')">Mark available</button>`}
           <button class="danger" onclick="deleteListing('${l.id}')">Delete</button>

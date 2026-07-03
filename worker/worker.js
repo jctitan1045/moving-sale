@@ -84,18 +84,8 @@ function stripCodeFences(text) {
 
 // --- Twilio photo intake -> AI draft listing ---
 
-async function handleTwilioIntake(request, env, ctx) {
-  const internalSecret = request.headers.get("X-Internal-Secret");
-  if (internalSecret !== env.INTERNAL_FORWARD_SECRET) {
-    return jsonResponse({ error: "unauthorized" }, 401, env);
-  }
-
-  const payload = await request.json();
-  const { from, body, mediaUrl0, mediaContentType0 } = payload;
-
-  if (!mediaUrl0) {
-    return jsonResponse({ error: "no media" }, 400, env);
-  }
+async function processPhotoIntake({ from, body, mediaUrl0, mediaContentType0 }, env) {
+  if (!mediaUrl0) return;
 
   const id = crypto.randomUUID();
 
@@ -104,7 +94,7 @@ async function handleTwilioIntake(request, env, ctx) {
   const mediaResp = await fetch(mediaUrl0, { headers: { "Authorization": `Basic ${twilioAuth}` } });
   if (!mediaResp.ok) {
     await sendWhatsApp(env.TWILIO_TO, `⚠️ Couldn't download photo for a new listing (Twilio media fetch failed, status ${mediaResp.status}).`, env);
-    return jsonResponse({ error: "media fetch failed" }, 502, env);
+    return;
   }
   const imageBuffer = await mediaResp.arrayBuffer();
   const contentType = mediaContentType0 || "image/jpeg";
@@ -198,12 +188,43 @@ Return ONLY valid JSON (no markdown, no code fences, no commentary) with exactly
   await saveListing(listing, env);
 
   const confirmMsg = parsed
-    ? `📦 Draft ready: "${listing.title}"\n${listing.price_cop_min.toLocaleString()}–${listing.price_cop_max.toLocaleString()} COP\nReview & publish: ${env.STOREFRONT_URL}/admin.html`
+    ? `📦 Draft ready: "${listing.title}"\nAsking ${listing.price_cop_max.toLocaleString()} COP OBO (floor: ${listing.price_cop_min.toLocaleString()})\nReview & publish: ${env.STOREFRONT_URL}/admin.html`
     : `⚠️ Photo received but AI couldn't draft a description automatically. A blank draft was created — review & fill in: ${env.STOREFRONT_URL}/admin.html`;
 
   await sendWhatsApp(env.TWILIO_TO, confirmMsg, env);
 
-  return jsonResponse({ ok: true, id }, 200, env);
+  return id;
+}
+
+// Called by daily-assistant/worker.js's forwarding branch (JSON body, internal secret).
+async function handleTwilioIntake(request, env, ctx) {
+  const internalSecret = request.headers.get("X-Internal-Secret");
+  if (internalSecret !== env.INTERNAL_FORWARD_SECRET) {
+    return jsonResponse({ error: "unauthorized" }, 401, env);
+  }
+
+  const payload = await request.json();
+  ctx.waitUntil(processPhotoIntake(payload, env));
+  return jsonResponse({ ok: true }, 200, env);
+}
+
+// Called directly by Twilio for the dedicated moving-sale WhatsApp number
+// (native form-encoded webhook body, no internal secret involved).
+async function handleTwilioWebhook(request, env, ctx) {
+  const formData = await request.formData();
+  const from = formData.get("From");
+  const body = (formData.get("Body") || "").trim();
+  const numMedia = parseInt(formData.get("NumMedia") || "0", 10);
+  const mediaUrl0 = formData.get("MediaUrl0");
+  const mediaContentType0 = formData.get("MediaContentType0");
+
+  if (numMedia > 0 && mediaUrl0) {
+    ctx.waitUntil(processPhotoIntake({ from, body, mediaUrl0, mediaContentType0 }, env));
+  } else if (from) {
+    ctx.waitUntil(sendWhatsApp(from, "This number is for the Medellín moving sale — send a photo of an item to list it for sale!", env));
+  }
+
+  return new Response("", { status: 200 });
 }
 
 // --- Public storefront API ---
@@ -288,7 +309,7 @@ async function handleCheckout(request, env) {
   for (const cartItem of items) {
     const listing = await getListing(cartItem.id, env);
     if (listing) {
-      lines.push(`- ${listing.title} x${cartItem.qty || 1} (${listing.price_cop_min.toLocaleString()}-${listing.price_cop_max.toLocaleString()} COP)${listing.status === "sold" ? " [already marked sold]" : ""}`);
+      lines.push(`- ${listing.title} x${cartItem.qty || 1} (asking ${listing.price_cop_max.toLocaleString()} COP OBO)${listing.status === "sold" ? " [already marked sold]" : ""}`);
     } else {
       lines.push(`- ${cartItem.title || cartItem.id} x${cartItem.qty || 1} [listing not found]`);
     }
@@ -326,6 +347,10 @@ export default {
     try {
       if (request.method === "POST" && path === "/twilio-intake") {
         return await handleTwilioIntake(request, env, ctx);
+      }
+
+      if (request.method === "POST" && path === "/twilio-webhook") {
+        return await handleTwilioWebhook(request, env, ctx);
       }
 
       if (request.method === "GET" && path === "/api/listings") {
