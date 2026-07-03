@@ -78,10 +78,6 @@ function computeUsd(copMin, copMax, fxRate) {
   };
 }
 
-function stripCodeFences(text) {
-  return text.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
-}
-
 // --- Twilio photo intake -> AI draft listing ---
 
 async function processPhotoIntake({ from, body, mediaUrl0, mediaContentType0 }, env) {
@@ -107,15 +103,7 @@ async function processPhotoIntake({ from, body, mediaUrl0, mediaContentType0 }, 
     ? `\n\nCaption from seller: "${body.trim()}"`
     : "";
 
-  const prompt = `You are helping create a resale marketplace listing for an item being sold as part of a household moving sale in Medellín, Colombia. Analyze the attached photo${captionLine}.
-
-Return ONLY valid JSON (no markdown, no code fences, no commentary) with exactly these keys:
-- title: short, specific item name (string)
-- description: 2-3 honest sentences describing the item and its visible condition/wear (string)
-- category: one of "furniture", "appliances", "electronics", "kitchenware", "decor", "clothing", "books", "outdoor", "other"
-- condition: one of "new", "like_new", "good", "fair", "worn"
-- price_cop_min: integer, Colombian pesos, realistic LOCAL Medellín secondhand resale value (not international retail price)
-- price_cop_max: integer, Colombian pesos, upper end of realistic local resale value`;
+  const prompt = `You are helping create a resale marketplace listing for an item being sold as part of a household moving sale in Medellín, Colombia. Analyze the attached photo${captionLine} and call create_listing with your best assessment. Write the title and description in English. Base the price range on realistic LOCAL Medellín secondhand resale value, not international retail price.`;
 
   const anthropicResp = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -127,6 +115,23 @@ Return ONLY valid JSON (no markdown, no code fences, no commentary) with exactly
     body: JSON.stringify({
       model: "claude-sonnet-4-6",
       max_tokens: 600,
+      tools: [{
+        name: "create_listing",
+        description: "Create a resale marketplace listing draft from a photo of an item.",
+        input_schema: {
+          type: "object",
+          properties: {
+            title: { type: "string", description: "Short, specific item name" },
+            description: { type: "string", description: "2-3 honest sentences describing the item and its visible condition/wear" },
+            category: { type: "string", enum: ["furniture", "appliances", "electronics", "kitchenware", "decor", "clothing", "books", "outdoor", "other"] },
+            condition: { type: "string", enum: ["new", "like_new", "good", "fair", "worn"] },
+            price_cop_min: { type: "integer", description: "Colombian pesos, realistic local Medellín secondhand resale value" },
+            price_cop_max: { type: "integer", description: "Colombian pesos, upper end of realistic local resale value" },
+          },
+          required: ["title", "description", "category", "condition", "price_cop_min", "price_cop_max"],
+        },
+      }],
+      tool_choice: { type: "tool", name: "create_listing" },
       messages: [{
         role: "user",
         content: [
@@ -138,14 +143,9 @@ Return ONLY valid JSON (no markdown, no code fences, no commentary) with exactly
   });
 
   const anthropicData = await anthropicResp.json();
-  const rawText = anthropicData?.content?.[0]?.text || "";
-
-  let parsed;
-  try {
-    parsed = JSON.parse(stripCodeFences(rawText));
-  } catch (e) {
-    parsed = null;
-  }
+  const toolUse = anthropicData?.content?.find((b) => b.type === "tool_use");
+  const parsed = toolUse?.input || null;
+  const rawText = parsed ? "" : JSON.stringify(anthropicData?.content || anthropicData);
 
   const fxRate = await getFxRate(env);
 
