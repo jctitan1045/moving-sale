@@ -1,5 +1,5 @@
 const CART_KEY = "moving_sale_cart";
-const CATEGORIES = ["furniture", "appliances", "electronics", "kitchenware", "decor", "clothing", "books", "outdoor", "other"];
+const CATEGORIES = ["furniture", "appliances", "electronics", "kitchenware", "decor", "clothing", "books", "outdoor", "pet", "other"];
 
 let listings = [];
 
