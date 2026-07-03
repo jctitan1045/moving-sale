@@ -142,22 +142,6 @@ main {
   font-size: 1rem;
 }
 
-.card-title {
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 0.5rem;
-}
-
-.card-title:hover { color: var(--accent-dark); }
-
-.toggle-icon {
-  font-size: 0.7rem;
-  color: var(--muted);
-  flex-shrink: 0;
-}
-
 .title-es {
   margin: -0.2rem 0 0;
   font-size: 0.8rem;
@@ -165,6 +149,20 @@ main {
   font-style: italic;
   color: var(--muted);
 }
+
+.read-desc-btn {
+  background: var(--danger);
+  color: white;
+  border: none;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 0.9rem;
+  align-self: flex-start;
+  margin: 0.1rem 0;
+}
+
+.read-desc-btn:hover { background: #94271d; }
 
 .card-body p {
   margin: 0;

@@ -103,10 +103,11 @@ function renderListings() {
       <div class="card-body">
         <span class="badge ${soldOut ? "sold" : ""}">${soldOut ? "SOLD" : l.condition}</span>
         ${max > 1 && !soldOut ? `<span class="badge">${max} available / disponibles</span>` : ""}
-        <h3 class="card-title" onclick="toggleDescription('${l.id}')">
-          ${escapeHtml(titleEn(l))} <span class="toggle-icon">${expanded ? "▲" : "▼"}</span>
-        </h3>
+        <h3>${escapeHtml(titleEn(l))}</h3>
         <h4 class="title-es">${escapeHtml(titleEs(l))}</h4>
+        <button class="read-desc-btn" onclick="toggleDescription('${l.id}')">
+          ${expanded ? "Hide description / Ocultar ▲" : "Read description / Leer descripción ▼"}
+        </button>
         ${expanded ? `
           <p>${escapeHtml(descEn(l))}</p>
           <p class="desc-es">${escapeHtml(descEs(l))}</p>
