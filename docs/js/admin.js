@@ -48,10 +48,7 @@ function draftCard(l) {
           <div><label>Category</label><select class="f-category">${selectOptions(CATEGORIES, l.category)}</select></div>
           <div><label>Condition</label><select class="f-condition">${selectOptions(CONDITIONS, l.condition)}</select></div>
         </div>
-        <div class="row">
-          <div><label>Your floor (private, not shown to buyers)</label><input class="f-price-min" type="number" value="${l.price_cop_min}"></div>
-          <div><label>Asking price COP (shown as OBO)</label><input class="f-price-max" type="number" value="${l.price_cop_max}"></div>
-        </div>
+        <div><label>Suggested offer (COP) — shown to buyers as "or best offer"</label><input class="f-price-max" type="number" value="${l.price_cop_max}"></div>
         <div class="admin-actions">
           <button onclick="publishDraft('${l.id}')">Publish</button>
           <button class="secondary" onclick="saveDraftEdits('${l.id}')">Save edits</button>
@@ -69,7 +66,7 @@ function publishedCard(l) {
       <div class="admin-fields">
         <div><strong>${escapeHtml(l.title)}</strong> <span class="badge ${l.status === "sold" ? "sold" : ""}">${l.status}</span></div>
         <div>${escapeHtml(l.description)}</div>
-        <div>Asking ${l.price_cop_max.toLocaleString()} COP OBO <span style="color:var(--muted);font-size:0.8rem;">(floor: ${l.price_cop_min.toLocaleString()})</span></div>
+        <div>Suggested offer: ${l.price_cop_max.toLocaleString()} COP, or best offer</div>
         <div class="admin-actions">
           ${l.status !== "sold" ? `<button onclick="markSold('${l.id}')">Mark sold</button>` : `<button class="secondary" onclick="markAvailable('${l.id}')">Mark available</button>`}
           <button class="danger" onclick="deleteListing('${l.id}')">Delete</button>
@@ -86,7 +83,6 @@ function readFields(id) {
     description: card.querySelector(".f-description").value.trim(),
     category: card.querySelector(".f-category").value,
     condition: card.querySelector(".f-condition").value,
-    price_cop_min: parseInt(card.querySelector(".f-price-min").value) || 0,
     price_cop_max: parseInt(card.querySelector(".f-price-max").value) || 0,
   };
 }

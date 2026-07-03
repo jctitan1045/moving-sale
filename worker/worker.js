@@ -188,7 +188,7 @@ Return ONLY valid JSON (no markdown, no code fences, no commentary) with exactly
   await saveListing(listing, env);
 
   const confirmMsg = parsed
-    ? `📦 Draft ready: "${listing.title}"\nAsking ${listing.price_cop_max.toLocaleString()} COP OBO (floor: ${listing.price_cop_min.toLocaleString()})\nReview & publish: ${env.STOREFRONT_URL}/admin.html`
+    ? `📦 Draft ready: "${listing.title}"\nSuggested offer: ${listing.price_cop_max.toLocaleString()} COP, or best offer\nReview & publish: ${env.STOREFRONT_URL}/admin.html`
     : `⚠️ Photo received but AI couldn't draft a description automatically. A blank draft was created — review & fill in: ${env.STOREFRONT_URL}/admin.html`;
 
   await sendWhatsApp(env.TWILIO_TO, confirmMsg, env);
@@ -309,7 +309,7 @@ async function handleCheckout(request, env) {
   for (const cartItem of items) {
     const listing = await getListing(cartItem.id, env);
     if (listing) {
-      lines.push(`- ${listing.title} x${cartItem.qty || 1} (asking ${listing.price_cop_max.toLocaleString()} COP OBO)${listing.status === "sold" ? " [already marked sold]" : ""}`);
+      lines.push(`- ${listing.title} x${cartItem.qty || 1} (suggested offer: ${listing.price_cop_max.toLocaleString()} COP, OBO)${listing.status === "sold" ? " [already marked sold]" : ""}`);
     } else {
       lines.push(`- ${cartItem.title || cartItem.id} x${cartItem.qty || 1} [listing not found]`);
     }

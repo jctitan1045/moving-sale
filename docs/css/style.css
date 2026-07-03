@@ -138,6 +138,14 @@ main {
 
 .price .usd { color: var(--muted); font-weight: 400; font-size: 0.85rem; }
 
+.price-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
 .price .obo {
   font-size: 0.7rem;
   font-weight: 600;

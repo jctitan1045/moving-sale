@@ -63,7 +63,8 @@ function renderListings() {
         <h3>${escapeHtml(l.title)}</h3>
         <p>${escapeHtml(l.description)}</p>
         <div class="price">
-          ${fmtCop(l.price_cop_max)} <span class="obo">OBO</span>
+          <div class="price-label">Suggested offer</div>
+          ${fmtCop(l.price_cop_max)} <span class="obo">or best offer</span>
           <div class="usd">${fmtUsd(l.price_usd_max)}</div>
         </div>
         <button ${l.status === "sold" ? "disabled" : ""} onclick="addToCart('${l.id}')">
