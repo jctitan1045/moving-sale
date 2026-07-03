@@ -93,7 +93,8 @@ function renderListings() {
         <p class="desc-es">${escapeHtml(descEs(l))}</p>
         <div class="price">
           <div class="price-label">Suggested offer / Oferta sugerida</div>
-          ${fmtCop(l.price_cop_max)} <span class="obo">or best offer / o mejor oferta</span>
+          <div class="price-amount">${fmtCop(l.price_cop_max)}</div>
+          <div class="obo">or best offer / o mejor oferta</div>
           <div class="usd">${fmtUsd(l.price_usd_max)}</div>
         </div>
         <button ${disabled ? "disabled" : ""} onclick="addToCart('${l.id}')">${buttonLabel}</button>

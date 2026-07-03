@@ -158,6 +158,10 @@ main {
   font-size: 0.95rem;
 }
 
+.price-amount {
+  font-size: 1.15rem;
+}
+
 .price .usd { color: var(--muted); font-weight: 400; font-size: 0.85rem; }
 
 .price-label {
@@ -168,15 +172,12 @@ main {
   font-weight: 600;
 }
 
-.price .obo {
-  font-size: 0.7rem;
+.obo {
+  display: block;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--accent);
-  border: 1px solid var(--accent);
-  border-radius: 4px;
-  padding: 0.05rem 0.3rem;
-  margin-left: 0.3rem;
-  vertical-align: middle;
+  margin: 0.1rem 0 0.15rem;
 }
 
 .badge {
