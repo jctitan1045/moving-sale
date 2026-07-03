@@ -43,9 +43,19 @@ function descEn(l) { return l.description_en || l.description || ""; }
 function descEs(l) { return l.description_es || l.description || l.description_en || ""; }
 function invOf(l) { return l.inventory || 1; }
 
+// Published listings default to read-only view mode; ids in here are being edited.
+// Drafts always render in edit mode (they need review before going live).
+const editingPublished = new Set();
+const justSaved = new Set();
+
+function modeBadge(mode) {
+  if (mode === "editing") return `<span class="mode-badge editing">✏️ Editing</span>`;
+  if (mode === "draft") return `<span class="mode-badge draft">✏️ Draft — needs review</span>`;
+  return `<span class="mode-badge live">🟢 Live</span>`;
+}
+
 function editableFields(l) {
   return `
-    ${l.status ? `<span class="badge ${l.status === "sold" ? "sold" : ""}">${l.status}</span>` : ""}
     <div><label>Title (English)</label><input class="f-title-en" value="${escapeHtml(titleEn(l))}"></div>
     <div><label>Título (Español)</label><input class="f-title-es" value="${escapeHtml(titleEs(l))}"></div>
     <div><label>Description (English)</label><textarea class="f-description-en">${escapeHtml(descEn(l))}</textarea></div>
@@ -61,15 +71,31 @@ function editableFields(l) {
   `;
 }
 
+function readOnlyFields(l) {
+  return `
+    <div><strong>${escapeHtml(titleEn(l))}</strong> / <em>${escapeHtml(titleEs(l))}</em></div>
+    <div>${escapeHtml(descEn(l))}</div>
+    <div><em>${escapeHtml(descEs(l))}</em></div>
+    <div>${l.category} · ${l.condition} · ${invOf(l)} available</div>
+    <div>Suggested offer: ${l.price_cop_max.toLocaleString()} COP, or best offer</div>
+  `;
+}
+
+function savedFlash(id) {
+  return justSaved.has(id) ? `<div class="saved-flash">✓ Saved</div>` : "";
+}
+
 function draftCard(l) {
   return `
     <div class="admin-item" data-id="${l.id}">
       <img src="${WORKER_BASE_URL}/images/${l.image_key}" alt="">
       <div class="admin-fields">
+        ${modeBadge("draft")}
+        ${savedFlash(l.id)}
         ${editableFields(l)}
         <div class="admin-actions">
           <button onclick="publishDraft('${l.id}')">Publish</button>
-          <button class="secondary" onclick="saveEdits('${l.id}')">Save edits</button>
+          <button class="secondary" onclick="saveEdits('${l.id}', false)">Save edits</button>
           <button class="danger" onclick="deleteListing('${l.id}')">Delete</button>
         </div>
       </div>
@@ -78,19 +104,38 @@ function draftCard(l) {
 }
 
 function publishedCard(l) {
+  const editing = editingPublished.has(l.id);
   return `
-    <div class="admin-item" data-id="${l.id}">
+    <div class="admin-item ${editing ? "is-editing" : ""}" data-id="${l.id}">
       <img src="${WORKER_BASE_URL}/images/${l.image_key}" alt="">
       <div class="admin-fields">
-        ${editableFields(l)}
+        <span class="badge ${l.status === "sold" ? "sold" : ""}">${l.status}</span>
+        ${modeBadge(editing ? "editing" : "live")}
+        ${savedFlash(l.id)}
+        ${editing ? editableFields(l) : readOnlyFields(l)}
         <div class="admin-actions">
-          <button onclick="saveEdits('${l.id}')">Save edits</button>
+          ${editing ? `
+            <button onclick="saveEdits('${l.id}', true)">Save</button>
+            <button class="secondary" onclick="cancelEdit('${l.id}')">Cancel</button>
+          ` : `
+            <button class="secondary" onclick="enterEdit('${l.id}')">Edit</button>
+          `}
           ${l.status !== "sold" ? `<button class="secondary" onclick="markSold('${l.id}')">Mark sold</button>` : `<button class="secondary" onclick="markAvailable('${l.id}')">Mark available</button>`}
           <button class="danger" onclick="deleteListing('${l.id}')">Delete</button>
         </div>
       </div>
     </div>
   `;
+}
+
+function enterEdit(id) {
+  editingPublished.add(id);
+  loadAll();
+}
+
+function cancelEdit(id) {
+  editingPublished.delete(id);
+  loadAll();
 }
 
 function readFields(id) {
@@ -116,9 +161,12 @@ async function patchListing(id, updates) {
   return resp.json();
 }
 
-async function saveEdits(id) {
+async function saveEdits(id, exitEditMode) {
   await patchListing(id, readFields(id));
+  if (exitEditMode) editingPublished.delete(id);
+  justSaved.add(id);
   loadAll();
+  setTimeout(() => { justSaved.delete(id); loadAll(); }, 1500);
 }
 
 async function publishDraft(id) {
