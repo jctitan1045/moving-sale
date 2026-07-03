@@ -98,11 +98,17 @@ main {
   margin: 0 auto;
 }
 
+.info-panel {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
 .instructions {
   font-size: 0.85rem;
   color: var(--muted);
   line-height: 1.5;
-  margin: 0 0 1rem;
+  margin: 0 0 0.75rem;
 }
 
 .pay-methods {
@@ -110,9 +116,6 @@ main {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 1.25rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border);
 }
 
 .pay-methods-label {
@@ -125,14 +128,14 @@ main {
 .pay-chip {
   font-size: 0.75rem;
   font-weight: 700;
-  padding: 0.25rem 0.7rem;
-  border-radius: 999px;
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
   color: white;
 }
 
 .pay-wise { background: #163300; color: #9fe870; }
-.pay-zelle { background: #6d1ed4; }
-.pay-venmo { background: #3d95ce; }
+.pay-zelle { background: #2e9e5b; }
+.pay-venmo { background: #6b7280; }
 .pay-revolut { background: #000000; }
 .pay-bancolombia { background: #ffdd00; color: #1a1a1a; }
 .pay-nequi { background: #ff2870; }
