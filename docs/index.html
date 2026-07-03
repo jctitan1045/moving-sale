@@ -28,17 +28,10 @@
     <h2>Your cart</h2>
     <div id="cartItems"></div>
 
-    <form class="checkout-form" id="checkoutForm">
-      <label for="buyerName">Your name</label>
-      <input id="buyerName" type="text" required>
-      <label for="buyerPhone">Your phone (WhatsApp preferred)</label>
-      <input id="buyerPhone" type="tel" required>
-      <button type="submit" id="checkoutBtn">Send request</button>
-    </form>
-
-    <div class="confirmation" id="confirmation" style="display:none;">
-      Thanks! Your request has been sent. Jordan will reach out on WhatsApp to confirm availability and arrange payment/pickup.
-    </div>
+    <button id="whatsappBtn" class="whatsapp-btn" disabled>
+      Chat on WhatsApp / Chatear por WhatsApp
+    </button>
+    <p class="whatsapp-hint">Opens WhatsApp with your cart pre-filled — just hit send. / Abre WhatsApp con tu carrito ya escrito, solo envíalo.</p>
   </div>
 
   <script src="js/config.js"></script>

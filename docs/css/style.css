@@ -226,11 +226,20 @@ main {
 
 .cart-line input[type=number] { width: 3.5rem; }
 
-.checkout-form {
+.whatsapp-btn {
   margin-top: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
+  background: #25d366;
+  font-size: 1rem;
+  padding: 0.75rem;
+}
+
+.whatsapp-btn:hover { background: #1da851; }
+
+.whatsapp-hint {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 0.5rem;
 }
 
 .overlay {
@@ -249,13 +258,6 @@ main {
   padding: 3rem 1rem;
 }
 
-.confirmation {
-  background: #eaf5ee;
-  border: 1px solid var(--accent);
-  padding: 1rem;
-  border-radius: 8px;
-  margin-top: 1rem;
-}
 
 /* Admin */
 .admin-token-gate {

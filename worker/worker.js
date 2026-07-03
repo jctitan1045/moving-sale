@@ -302,53 +302,6 @@ async function handlePatchConfig(request, env) {
   return jsonResponse({ fx_rate: fxRate }, 200, env);
 }
 
-// --- Checkout ---
-
-async function handleCheckout(request, env) {
-  const payload = await request.json();
-  const { items, buyer_name, buyer_phone } = payload;
-
-  if (!items || !items.length || !buyer_name || !buyer_phone) {
-    return jsonResponse({ error: "missing items, buyer_name, or buyer_phone" }, 400, env);
-  }
-
-  const id = crypto.randomUUID();
-  const lines = [];
-  for (const cartItem of items) {
-    const listing = await getListing(cartItem.id, env);
-    if (listing) {
-      const qty = cartItem.qty || 1;
-      const inventory = listing.inventory || 1;
-      const flags = [
-        listing.status === "sold" ? "already marked sold" : null,
-        qty > inventory ? `requested ${qty}, only ${inventory} in stock` : null,
-      ].filter(Boolean);
-      lines.push(`- ${listing.title_en} x${qty} (suggested offer: ${listing.price_cop_max.toLocaleString()} COP, OBO)${flags.length ? ` [${flags.join(", ")}]` : ""}`);
-    } else {
-      lines.push(`- ${cartItem.title || cartItem.id} x${cartItem.qty || 1} [listing not found]`);
-    }
-  }
-
-  const message = `🛒 New inquiry from ${buyer_name} (${buyer_phone}):\n${lines.join("\n")}\n\nReply to arrange payment/pickup.`;
-
-  const inquiry = {
-    id,
-    items,
-    buyer_name,
-    buyer_phone,
-    created_at: new Date().toISOString(),
-  };
-
-  const sendResult = await sendWhatsApp(env.TWILIO_TO, message, env);
-  inquiry.whatsapp_sent = !sendResult.error_code;
-  inquiry.whatsapp_error_code = sendResult.error_code || null;
-
-  // Always persist the inquiry, even if the WhatsApp send failed, so the buyer's info isn't lost.
-  await env.KV.put(`inquiry:${id}`, JSON.stringify(inquiry));
-
-  return jsonResponse({ ok: true, id }, 200, env);
-}
-
 export default {
   async fetch(request, env, ctx) {
     if (request.method === "OPTIONS") {
@@ -398,10 +351,6 @@ export default {
       if (request.method === "PATCH" && path === "/api/admin/config") {
         if (!isAdminAuthorized(request, env)) return jsonResponse({ error: "unauthorized" }, 401, env);
         return await handlePatchConfig(request, env);
-      }
-
-      if (request.method === "POST" && path === "/api/checkout") {
-        return await handleCheckout(request, env);
       }
 
       return jsonResponse({ error: "not found" }, 404, env);

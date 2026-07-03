@@ -117,13 +117,12 @@ function renderCart() {
 
   document.getElementById("cartCount").textContent = cartCount();
 
+  document.getElementById("whatsappBtn").disabled = !ids.length;
+
   if (!ids.length) {
     list.innerHTML = `<div class="empty-state">Your cart is empty.</div>`;
-    document.getElementById("checkoutForm").style.display = "none";
     return;
   }
-
-  document.getElementById("checkoutForm").style.display = "flex";
 
   list.innerHTML = ids.map((id) => {
     const listing = listings.find((l) => l.id === id);
@@ -143,41 +142,27 @@ function toggleCart(open) {
   document.getElementById("overlay").classList.toggle("open", open);
 }
 
-async function submitCheckout(event) {
-  event.preventDefault();
+function whatsAppCheckoutMessage() {
   const cart = getCart();
-  const items = Object.entries(cart).map(([id, qty]) => {
+  const lines = Object.entries(cart).map(([id, qty]) => {
     const listing = listings.find((l) => l.id === id);
-    return { id, title: listing ? titleEn(listing) : id, qty };
+    const name = listing ? titleEn(listing) : id;
+    return qty > 1 ? `- ${name} x${qty}` : `- ${name}`;
   });
+  return `Hi! I'm interested in these items from the moving sale:\n${lines.join("\n")}\n\nDo you still have them?`;
+}
 
-  const buyer_name = document.getElementById("buyerName").value.trim();
-  const buyer_phone = document.getElementById("buyerPhone").value.trim();
+function openWhatsAppCheckout() {
+  const cart = getCart();
+  if (!Object.keys(cart).length) return;
 
-  if (!items.length || !buyer_name || !buyer_phone) return;
+  const url = `https://wa.me/${JORDAN_WHATSAPP}?text=${encodeURIComponent(whatsAppCheckoutMessage())}`;
+  window.open(url, "_blank");
 
-  const btn = document.getElementById("checkoutBtn");
-  btn.disabled = true;
-  btn.textContent = "Sending...";
-
-  try {
-    const resp = await fetch(`${WORKER_BASE_URL}/api/checkout`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items, buyer_name, buyer_phone }),
-    });
-    if (!resp.ok) throw new Error("checkout failed");
-
-    document.getElementById("cartItems").style.display = "none";
-    document.getElementById("checkoutForm").style.display = "none";
-    document.getElementById("confirmation").style.display = "block";
-
-    localStorage.removeItem(CART_KEY);
-  } catch (err) {
-    alert("Something went wrong sending your request. Please try again in a moment.");
-    btn.disabled = false;
-    btn.textContent = "Send request";
-  }
+  localStorage.removeItem(CART_KEY);
+  toggleCart(false);
+  renderCart();
+  renderListings();
 }
 
 async function loadListings() {
@@ -202,7 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("cartToggle").addEventListener("click", () => toggleCart(true));
   document.getElementById("cartClose").addEventListener("click", () => toggleCart(false));
   document.getElementById("overlay").addEventListener("click", () => toggleCart(false));
-  document.getElementById("checkoutForm").addEventListener("submit", submitCheckout);
+  document.getElementById("whatsappBtn").addEventListener("click", openWhatsAppCheckout);
 
   loadListings();
 });
