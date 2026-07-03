@@ -133,9 +133,9 @@ main {
   color: white;
 }
 
-.pay-wise { background: #163300; color: #9fe870; }
-.pay-zelle { background: #2e9e5b; }
-.pay-venmo { background: #6b7280; }
+.pay-wise { background: #9fe870; color: #163300; }
+.pay-zelle { background: #6d1ed4; }
+.pay-venmo { background: #008cff; }
 .pay-revolut { background: #000000; }
 .pay-bancolombia { background: #ffdd00; color: #1a1a1a; }
 .pay-nequi { background: #ff2870; }
