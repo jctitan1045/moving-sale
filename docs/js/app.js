@@ -2,6 +2,13 @@ const CART_KEY = "moving_sale_cart";
 const CATEGORIES = ["furniture", "appliances", "electronics", "kitchenware", "decor", "clothing", "books", "outdoor", "pet", "other"];
 
 let listings = [];
+const expandedIds = new Set();
+
+function toggleDescription(id) {
+  if (expandedIds.has(id)) expandedIds.delete(id);
+  else expandedIds.add(id);
+  renderListings();
+}
 
 function getCart() {
   try {
@@ -88,16 +95,22 @@ function renderListings() {
     if (soldOut) buttonLabel = "Sold / Vendido";
     else if (maxed) buttonLabel = "Max in cart / Máximo en el carrito";
 
+    const expanded = expandedIds.has(l.id);
+
     return `
     <div class="card">
       <img src="${WORKER_BASE_URL}/images/${l.image_key}" alt="${escapeHtml(titleEn(l))}" loading="lazy">
       <div class="card-body">
         <span class="badge ${soldOut ? "sold" : ""}">${soldOut ? "SOLD" : l.condition}</span>
         ${max > 1 && !soldOut ? `<span class="badge">${max} available / disponibles</span>` : ""}
-        <h3>${escapeHtml(titleEn(l))}</h3>
+        <h3 class="card-title" onclick="toggleDescription('${l.id}')">
+          ${escapeHtml(titleEn(l))} <span class="toggle-icon">${expanded ? "▲" : "▼"}</span>
+        </h3>
         <h4 class="title-es">${escapeHtml(titleEs(l))}</h4>
-        <p>${escapeHtml(descEn(l))}</p>
-        <p class="desc-es">${escapeHtml(descEs(l))}</p>
+        ${expanded ? `
+          <p>${escapeHtml(descEn(l))}</p>
+          <p class="desc-es">${escapeHtml(descEs(l))}</p>
+        ` : ""}
         <div class="price">
           <div class="price-label">Suggested offer / Oferta sugerida</div>
           <div class="price-amount">${fmtCop(l.price_cop_max)}</div>
