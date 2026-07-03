@@ -141,6 +141,33 @@ main {
 .pay-nequi { background: #ff2870; }
 .pay-cash { background: var(--accent); }
 
+.pickup-map {
+  margin-top: 1rem;
+}
+
+.pickup-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+}
+
+.pickup-iframe {
+  width: 100%;
+  max-width: 500px;
+  height: 220px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: block;
+}
+
+.pickup-link {
+  display: inline-block;
+  margin-top: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--accent-dark);
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
