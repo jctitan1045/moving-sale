@@ -78,6 +78,7 @@ function readOnlyFields(l) {
     <div><em>${escapeHtml(descEs(l))}</em></div>
     <div>${l.category} · ${l.condition} · ${invOf(l)} available</div>
     <div>Suggested offer: ${l.price_cop_max.toLocaleString()} COP, or best offer</div>
+    ${l.price_new_cop ? `<div class="ai-price-note">AI reasoning: new ≈ ${l.price_new_cop.toLocaleString()} COP → floor ${l.price_cop_min.toLocaleString()} / offer ${l.price_cop_max.toLocaleString()}</div>` : ""}
   `;
 }
 
@@ -92,6 +93,7 @@ function draftCard(l) {
       <div class="admin-fields">
         ${modeBadge("draft")}
         ${savedFlash(l.id)}
+        ${l.price_new_cop ? `<div class="ai-price-note">AI reasoning: new ≈ ${l.price_new_cop.toLocaleString()} COP → floor ${l.price_cop_min.toLocaleString()} / offer ${l.price_cop_max.toLocaleString()}</div>` : ""}
         ${editableFields(l)}
         <div class="admin-actions">
           <button onclick="publishDraft('${l.id}')">Publish</button>

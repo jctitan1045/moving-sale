@@ -103,7 +103,19 @@ async function processPhotoIntake({ from, body, mediaUrl0, mediaContentType0 }, 
     ? `\n\nCaption from seller: "${body.trim()}"`
     : "";
 
-  const prompt = `You are helping create a resale marketplace listing for an item being sold as part of a household moving sale in Medellín, Colombia. Analyze the attached photo${captionLine} and call create_listing with your best assessment. Write both an English and a Spanish version of the title and description — natural, native-quality translations, not literal word-for-word. Base the price range on realistic LOCAL Medellín secondhand resale value, not international retail price.`;
+  const prompt = `You are helping create a resale marketplace listing for an item being sold as part of a household moving sale in Medellín, Colombia. Analyze the attached photo${captionLine} and call create_listing with your best assessment.
+
+Price the item in two steps, and show your work by filling in price_new_cop:
+1. Estimate price_new_cop: what this item costs brand new at retail in Colombia today.
+2. Apply a condition-based discount from that new price to get the resale range:
+   - new: 85-100% of new price
+   - like_new: 70-85% of new price
+   - good: 55-70% of new price
+   - fair: 40-55% of new price
+   - worn: 25-40% of new price
+   Set price_cop_max near the TOP of the applicable band — these listings should anchor a bit high, since buyers negotiate down anyway. Set price_cop_min near the bottom of the same band.
+
+Write both an English and a Spanish version of the title and description — natural, native-quality translations, not literal word-for-word.`;
 
   const anthropicResp = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -127,10 +139,11 @@ async function processPhotoIntake({ from, body, mediaUrl0, mediaContentType0 }, 
             description_es: { type: "string", description: "2-3 honest sentences describing the item and its visible condition/wear, in natural Spanish" },
             category: { type: "string", enum: ["furniture", "appliances", "electronics", "kitchenware", "decor", "clothing", "books", "outdoor", "pet", "other"] },
             condition: { type: "string", enum: ["new", "like_new", "good", "fair", "worn"] },
-            price_cop_min: { type: "integer", description: "Colombian pesos, realistic local Medellín secondhand resale value" },
-            price_cop_max: { type: "integer", description: "Colombian pesos, upper end of realistic local resale value" },
+            price_new_cop: { type: "integer", description: "Colombian pesos — what this item costs brand new at retail in Colombia today. Reasoning anchor for the resale price below, not shown to buyers." },
+            price_cop_min: { type: "integer", description: "Colombian pesos — bottom of the condition-based discount band applied to price_new_cop" },
+            price_cop_max: { type: "integer", description: "Colombian pesos — top of the condition-based discount band applied to price_new_cop; this is the price shown to buyers" },
           },
-          required: ["title_en", "title_es", "description_en", "description_es", "category", "condition", "price_cop_min", "price_cop_max"],
+          required: ["title_en", "title_es", "description_en", "description_es", "category", "condition", "price_new_cop", "price_cop_min", "price_cop_max"],
         },
       }],
       tool_choice: { type: "tool", name: "create_listing" },
@@ -162,6 +175,7 @@ async function processPhotoIntake({ from, body, mediaUrl0, mediaContentType0 }, 
       description_es: parsed.description_es || parsed.description_en || "",
       category: parsed.category || "other",
       condition: parsed.condition || "good",
+      price_new_cop: parsed.price_new_cop || null,
       price_cop_min: parsed.price_cop_min,
       price_cop_max: parsed.price_cop_max,
       ...usd,
