@@ -74,6 +74,15 @@ button:disabled { background: #ccc; cursor: not-allowed; }
   position: relative;
 }
 
+.storefront-link {
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-decoration: none;
+  align-self: center;
+}
+
+.storefront-link:hover { color: var(--text); }
+
 .cart-count {
   background: var(--danger);
   color: white;
