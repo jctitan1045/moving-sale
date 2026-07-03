@@ -75,8 +75,13 @@ function invOf(l) { return l.inventory || 1; }
 function renderListings() {
   const grid = document.getElementById("grid");
   const categoryFilter = document.getElementById("categoryFilter").value;
+  const hideSold = document.getElementById("hideSoldToggle").checked;
 
-  const filtered = listings.filter((l) => !categoryFilter || l.category === categoryFilter);
+  const filtered = listings.filter((l) => {
+    if (categoryFilter && l.category !== categoryFilter) return false;
+    if (hideSold && l.status === "sold") return false;
+    return true;
+  });
 
   if (!filtered.length) {
     grid.innerHTML = `<div class="empty-state">No items match that filter yet.</div>`;
@@ -216,6 +221,8 @@ document.addEventListener("DOMContentLoaded", () => {
   categorySelect.innerHTML = `<option value="">All categories</option>` +
     CATEGORIES.map((c) => `<option value="${c}">${c}</option>`).join("");
   categorySelect.addEventListener("change", renderListings);
+
+  document.getElementById("hideSoldToggle").addEventListener("change", renderListings);
 
   document.getElementById("cartToggle").addEventListener("click", () => toggleCart(true));
   document.getElementById("cartClose").addEventListener("click", () => toggleCart(false));
