@@ -1,6 +1,19 @@
 const TOKEN_KEY = "moving_sale_admin_token";
 const CATEGORIES = ["furniture", "appliances", "electronics", "kitchenware", "decor", "clothing", "books", "outdoor", "sports", "pet", "other"];
 const CONDITIONS = ["new", "like_new", "good", "fair", "worn"];
+const CATEGORY_LABELS = {
+  furniture: "Furniture / Muebles",
+  appliances: "Appliances / Electrodomésticos",
+  electronics: "Electronics / Electrónica",
+  kitchenware: "Kitchenware / Menaje de cocina",
+  decor: "Decor / Decoración",
+  clothing: "Clothing / Ropa",
+  books: "Books / Libros",
+  outdoor: "Outdoor / Exterior",
+  sports: "Sports / Deportes",
+  pet: "Pet / Mascotas",
+  other: "Other / Otro",
+};
 
 function getToken() {
   return localStorage.getItem(TOKEN_KEY) || "";
@@ -33,8 +46,8 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-function selectOptions(options, selected) {
-  return options.map((o) => `<option value="${o}" ${o === selected ? "selected" : ""}>${o}</option>`).join("");
+function selectOptions(options, selected, labels) {
+  return options.map((o) => `<option value="${o}" ${o === selected ? "selected" : ""}>${labels ? labels[o] : o}</option>`).join("");
 }
 
 function titleEn(l) { return l.title_en || l.title || ""; }
@@ -61,7 +74,7 @@ function editableFields(l) {
     <div><label>Description (English)</label><textarea class="f-description-en">${escapeHtml(descEn(l))}</textarea></div>
     <div><label>Descripción (Español)</label><textarea class="f-description-es">${escapeHtml(descEs(l))}</textarea></div>
     <div class="row">
-      <div><label>Category</label><select class="f-category">${selectOptions(CATEGORIES, l.category)}</select></div>
+      <div><label>Category</label><select class="f-category">${selectOptions(CATEGORIES, l.category, CATEGORY_LABELS)}</select></div>
       <div><label>Condition</label><select class="f-condition">${selectOptions(CONDITIONS, l.condition)}</select></div>
     </div>
     <div class="row">
@@ -76,7 +89,7 @@ function readOnlyFields(l) {
     <div><strong>${escapeHtml(titleEn(l))}</strong> / <em>${escapeHtml(titleEs(l))}</em></div>
     <div>${escapeHtml(descEn(l))}</div>
     <div><em>${escapeHtml(descEs(l))}</em></div>
-    <div>${l.category} · ${l.condition} · ${invOf(l)} available</div>
+    <div>${CATEGORY_LABELS[l.category] || l.category} · ${l.condition} · ${invOf(l)} available</div>
     <div>Suggested offer: ${l.price_cop_max.toLocaleString()} COP, or best offer</div>
     ${l.price_new_cop ? `<div class="ai-price-note">AI reasoning: new ≈ ${l.price_new_cop.toLocaleString()} COP → floor ${l.price_cop_min.toLocaleString()} / offer ${l.price_cop_max.toLocaleString()}</div>` : ""}
   `;

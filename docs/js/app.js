@@ -1,5 +1,18 @@
 const CART_KEY = "moving_sale_cart";
 const CATEGORIES = ["furniture", "appliances", "electronics", "kitchenware", "decor", "clothing", "books", "outdoor", "sports", "pet", "other"];
+const CATEGORY_LABELS = {
+  furniture: "Furniture / Muebles",
+  appliances: "Appliances / Electrodomésticos",
+  electronics: "Electronics / Electrónica",
+  kitchenware: "Kitchenware / Menaje de cocina",
+  decor: "Decor / Decoración",
+  clothing: "Clothing / Ropa",
+  books: "Books / Libros",
+  outdoor: "Outdoor / Exterior",
+  sports: "Sports / Deportes",
+  pet: "Pet / Mascotas",
+  other: "Other / Otro",
+};
 
 let listings = [];
 const expandedIds = new Set();
@@ -215,8 +228,8 @@ async function loadListings() {
 
 document.addEventListener("DOMContentLoaded", () => {
   const categorySelect = document.getElementById("categoryFilter");
-  categorySelect.innerHTML = `<option value="">All categories</option>` +
-    CATEGORIES.map((c) => `<option value="${c}">${c}</option>`).join("");
+  categorySelect.innerHTML = `<option value="">All categories / Todas las categorías</option>` +
+    CATEGORIES.map((c) => `<option value="${c}">${CATEGORY_LABELS[c]}</option>`).join("");
   categorySelect.addEventListener("change", renderListings);
 
   document.getElementById("cartToggle").addEventListener("click", () => toggleCart(true));
