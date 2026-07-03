@@ -103,7 +103,7 @@ async function processPhotoIntake({ from, body, mediaUrl0, mediaContentType0 }, 
     ? `\n\nCaption from seller: "${body.trim()}"`
     : "";
 
-  const prompt = `You are helping create a resale marketplace listing for an item being sold as part of a household moving sale in Medellín, Colombia. Analyze the attached photo${captionLine} and call create_listing with your best assessment. Write the title and description in English. Base the price range on realistic LOCAL Medellín secondhand resale value, not international retail price.`;
+  const prompt = `You are helping create a resale marketplace listing for an item being sold as part of a household moving sale in Medellín, Colombia. Analyze the attached photo${captionLine} and call create_listing with your best assessment. Write both an English and a Spanish version of the title and description — natural, native-quality translations, not literal word-for-word. Base the price range on realistic LOCAL Medellín secondhand resale value, not international retail price.`;
 
   const anthropicResp = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -121,14 +121,16 @@ async function processPhotoIntake({ from, body, mediaUrl0, mediaContentType0 }, 
         input_schema: {
           type: "object",
           properties: {
-            title: { type: "string", description: "Short, specific item name" },
-            description: { type: "string", description: "2-3 honest sentences describing the item and its visible condition/wear" },
+            title_en: { type: "string", description: "Short, specific item name, in English" },
+            title_es: { type: "string", description: "Short, specific item name, in natural Spanish" },
+            description_en: { type: "string", description: "2-3 honest sentences describing the item and its visible condition/wear, in English" },
+            description_es: { type: "string", description: "2-3 honest sentences describing the item and its visible condition/wear, in natural Spanish" },
             category: { type: "string", enum: ["furniture", "appliances", "electronics", "kitchenware", "decor", "clothing", "books", "outdoor", "other"] },
             condition: { type: "string", enum: ["new", "like_new", "good", "fair", "worn"] },
             price_cop_min: { type: "integer", description: "Colombian pesos, realistic local Medellín secondhand resale value" },
             price_cop_max: { type: "integer", description: "Colombian pesos, upper end of realistic local resale value" },
           },
-          required: ["title", "description", "category", "condition", "price_cop_min", "price_cop_max"],
+          required: ["title_en", "title_es", "description_en", "description_es", "category", "condition", "price_cop_min", "price_cop_max"],
         },
       }],
       tool_choice: { type: "tool", name: "create_listing" },
@@ -150,12 +152,14 @@ async function processPhotoIntake({ from, body, mediaUrl0, mediaContentType0 }, 
   const fxRate = await getFxRate(env);
 
   let listing;
-  if (parsed && parsed.title && typeof parsed.price_cop_min === "number") {
+  if (parsed && parsed.title_en && typeof parsed.price_cop_min === "number") {
     const usd = computeUsd(parsed.price_cop_min, parsed.price_cop_max, fxRate);
     listing = {
       id,
-      title: parsed.title,
-      description: parsed.description || "",
+      title_en: parsed.title_en,
+      title_es: parsed.title_es || parsed.title_en,
+      description_en: parsed.description_en || "",
+      description_es: parsed.description_es || parsed.description_en || "",
       category: parsed.category || "other",
       condition: parsed.condition || "good",
       price_cop_min: parsed.price_cop_min,
@@ -170,8 +174,10 @@ async function processPhotoIntake({ from, body, mediaUrl0, mediaContentType0 }, 
     // AI output didn't parse — still create a draft so the photo isn't lost, Jordan fills in details manually.
     listing = {
       id,
-      title: "Needs review",
-      description: rawText ? `AI output could not be parsed automatically: ${rawText.slice(0, 500)}` : "AI did not return a description.",
+      title_en: "Needs review",
+      title_es: "Necesita revisión",
+      description_en: rawText ? `AI output could not be parsed automatically: ${rawText.slice(0, 500)}` : "AI did not return a description.",
+      description_es: "",
       category: "other",
       condition: "good",
       price_cop_min: 0,
@@ -188,7 +194,7 @@ async function processPhotoIntake({ from, body, mediaUrl0, mediaContentType0 }, 
   await saveListing(listing, env);
 
   const confirmMsg = parsed
-    ? `📦 Draft ready: "${listing.title}"\nSuggested offer: ${listing.price_cop_max.toLocaleString()} COP, or best offer\nReview & publish: ${env.STOREFRONT_URL}/admin.html`
+    ? `📦 Draft ready: "${listing.title_en}"\nSuggested offer: ${listing.price_cop_max.toLocaleString()} COP, or best offer\nReview & publish: ${env.STOREFRONT_URL}/admin.html`
     : `⚠️ Photo received but AI couldn't draft a description automatically. A blank draft was created — review & fill in: ${env.STOREFRONT_URL}/admin.html`;
 
   await sendWhatsApp(env.TWILIO_TO, confirmMsg, env);
@@ -309,7 +315,7 @@ async function handleCheckout(request, env) {
   for (const cartItem of items) {
     const listing = await getListing(cartItem.id, env);
     if (listing) {
-      lines.push(`- ${listing.title} x${cartItem.qty || 1} (suggested offer: ${listing.price_cop_max.toLocaleString()} COP, OBO)${listing.status === "sold" ? " [already marked sold]" : ""}`);
+      lines.push(`- ${listing.title_en} x${cartItem.qty || 1} (suggested offer: ${listing.price_cop_max.toLocaleString()} COP, OBO)${listing.status === "sold" ? " [already marked sold]" : ""}`);
     } else {
       lines.push(`- ${cartItem.title || cartItem.id} x${cartItem.qty || 1} [listing not found]`);
     }

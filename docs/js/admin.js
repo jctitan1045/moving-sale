@@ -37,13 +37,20 @@ function selectOptions(options, selected) {
   return options.map((o) => `<option value="${o}" ${o === selected ? "selected" : ""}>${o}</option>`).join("");
 }
 
+function titleEn(l) { return l.title_en || l.title || ""; }
+function titleEs(l) { return l.title_es || l.title || l.title_en || ""; }
+function descEn(l) { return l.description_en || l.description || ""; }
+function descEs(l) { return l.description_es || l.description || l.description_en || ""; }
+
 function draftCard(l) {
   return `
     <div class="admin-item" data-id="${l.id}">
       <img src="${WORKER_BASE_URL}/images/${l.image_key}" alt="">
       <div class="admin-fields">
-        <div><label>Title</label><input class="f-title" value="${escapeHtml(l.title)}"></div>
-        <div><label>Description</label><textarea class="f-description">${escapeHtml(l.description)}</textarea></div>
+        <div><label>Title (English)</label><input class="f-title-en" value="${escapeHtml(titleEn(l))}"></div>
+        <div><label>Título (Español)</label><input class="f-title-es" value="${escapeHtml(titleEs(l))}"></div>
+        <div><label>Description (English)</label><textarea class="f-description-en">${escapeHtml(descEn(l))}</textarea></div>
+        <div><label>Descripción (Español)</label><textarea class="f-description-es">${escapeHtml(descEs(l))}</textarea></div>
         <div class="row">
           <div><label>Category</label><select class="f-category">${selectOptions(CATEGORIES, l.category)}</select></div>
           <div><label>Condition</label><select class="f-condition">${selectOptions(CONDITIONS, l.condition)}</select></div>
@@ -64,8 +71,9 @@ function publishedCard(l) {
     <div class="admin-item" data-id="${l.id}">
       <img src="${WORKER_BASE_URL}/images/${l.image_key}" alt="">
       <div class="admin-fields">
-        <div><strong>${escapeHtml(l.title)}</strong> <span class="badge ${l.status === "sold" ? "sold" : ""}">${l.status}</span></div>
-        <div>${escapeHtml(l.description)}</div>
+        <div><strong>${escapeHtml(titleEn(l))}</strong> / <em>${escapeHtml(titleEs(l))}</em> <span class="badge ${l.status === "sold" ? "sold" : ""}">${l.status}</span></div>
+        <div>${escapeHtml(descEn(l))}</div>
+        <div><em>${escapeHtml(descEs(l))}</em></div>
         <div>Suggested offer: ${l.price_cop_max.toLocaleString()} COP, or best offer</div>
         <div class="admin-actions">
           ${l.status !== "sold" ? `<button onclick="markSold('${l.id}')">Mark sold</button>` : `<button class="secondary" onclick="markAvailable('${l.id}')">Mark available</button>`}
@@ -79,8 +87,10 @@ function publishedCard(l) {
 function readFields(id) {
   const card = document.querySelector(`.admin-item[data-id="${id}"]`);
   return {
-    title: card.querySelector(".f-title").value.trim(),
-    description: card.querySelector(".f-description").value.trim(),
+    title_en: card.querySelector(".f-title-en").value.trim(),
+    title_es: card.querySelector(".f-title-es").value.trim(),
+    description_en: card.querySelector(".f-description-en").value.trim(),
+    description_es: card.querySelector(".f-description-es").value.trim(),
     category: card.querySelector(".f-category").value,
     condition: card.querySelector(".f-condition").value,
     price_cop_max: parseInt(card.querySelector(".f-price-max").value) || 0,

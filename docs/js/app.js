@@ -44,6 +44,12 @@ function fmtUsd(n) {
   return `$${Number(n).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} USD`;
 }
 
+// Fallbacks handle older listings saved before bilingual fields existed.
+function titleEn(l) { return l.title_en || l.title || ""; }
+function titleEs(l) { return l.title_es || l.title || l.title_en || ""; }
+function descEn(l) { return l.description_en || l.description || ""; }
+function descEs(l) { return l.description_es || l.description || l.description_en || ""; }
+
 function renderListings() {
   const grid = document.getElementById("grid");
   const categoryFilter = document.getElementById("categoryFilter").value;
@@ -57,18 +63,20 @@ function renderListings() {
 
   grid.innerHTML = filtered.map((l) => `
     <div class="card">
-      <img src="${WORKER_BASE_URL}/images/${l.image_key}" alt="${escapeHtml(l.title)}" loading="lazy">
+      <img src="${WORKER_BASE_URL}/images/${l.image_key}" alt="${escapeHtml(titleEn(l))}" loading="lazy">
       <div class="card-body">
         <span class="badge ${l.status === "sold" ? "sold" : ""}">${l.status === "sold" ? "SOLD" : l.condition}</span>
-        <h3>${escapeHtml(l.title)}</h3>
-        <p>${escapeHtml(l.description)}</p>
+        <h3>${escapeHtml(titleEn(l))}</h3>
+        <h4 class="title-es">${escapeHtml(titleEs(l))}</h4>
+        <p>${escapeHtml(descEn(l))}</p>
+        <p class="desc-es">${escapeHtml(descEs(l))}</p>
         <div class="price">
-          <div class="price-label">Suggested offer</div>
-          ${fmtCop(l.price_cop_max)} <span class="obo">or best offer</span>
+          <div class="price-label">Suggested offer / Oferta sugerida</div>
+          ${fmtCop(l.price_cop_max)} <span class="obo">or best offer / o mejor oferta</span>
           <div class="usd">${fmtUsd(l.price_usd_max)}</div>
         </div>
         <button ${l.status === "sold" ? "disabled" : ""} onclick="addToCart('${l.id}')">
-          ${l.status === "sold" ? "Sold" : "Add to cart"}
+          ${l.status === "sold" ? "Sold / Vendido" : "Add to cart / Agregar al carrito"}
         </button>
       </div>
     </div>
@@ -101,7 +109,7 @@ function renderCart() {
     if (!listing) return "";
     return `
       <div class="cart-line">
-        <span class="name">${escapeHtml(listing.title)}</span>
+        <span class="name">${escapeHtml(titleEn(listing))}</span>
         <input type="number" min="0" value="${cart[id]}" onchange="setQty('${id}', parseInt(this.value) || 0)">
         <button class="secondary" onclick="setQty('${id}', 0)">✕</button>
       </div>
@@ -119,7 +127,7 @@ async function submitCheckout(event) {
   const cart = getCart();
   const items = Object.entries(cart).map(([id, qty]) => {
     const listing = listings.find((l) => l.id === id);
-    return { id, title: listing ? listing.title : id, qty };
+    return { id, title: listing ? titleEn(listing) : id, qty };
   });
 
   const buyer_name = document.getElementById("buyerName").value.trim();

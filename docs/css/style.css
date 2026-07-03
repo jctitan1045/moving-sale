@@ -124,11 +124,24 @@ main {
   font-size: 1rem;
 }
 
+.title-es {
+  margin: -0.2rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--muted);
+}
+
 .card-body p {
   margin: 0;
   font-size: 0.85rem;
   color: var(--muted);
   flex: 1;
+}
+
+.desc-es {
+  font-style: italic;
+  margin-top: -0.25rem;
 }
 
 .price {
