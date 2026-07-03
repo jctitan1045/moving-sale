@@ -42,23 +42,30 @@ function titleEs(l) { return l.title_es || l.title || l.title_en || ""; }
 function descEn(l) { return l.description_en || l.description || ""; }
 function descEs(l) { return l.description_es || l.description || l.description_en || ""; }
 
+function editableFields(l) {
+  return `
+    ${l.status ? `<span class="badge ${l.status === "sold" ? "sold" : ""}">${l.status}</span>` : ""}
+    <div><label>Title (English)</label><input class="f-title-en" value="${escapeHtml(titleEn(l))}"></div>
+    <div><label>Título (Español)</label><input class="f-title-es" value="${escapeHtml(titleEs(l))}"></div>
+    <div><label>Description (English)</label><textarea class="f-description-en">${escapeHtml(descEn(l))}</textarea></div>
+    <div><label>Descripción (Español)</label><textarea class="f-description-es">${escapeHtml(descEs(l))}</textarea></div>
+    <div class="row">
+      <div><label>Category</label><select class="f-category">${selectOptions(CATEGORIES, l.category)}</select></div>
+      <div><label>Condition</label><select class="f-condition">${selectOptions(CONDITIONS, l.condition)}</select></div>
+    </div>
+    <div><label>Suggested offer (COP) — shown to buyers as "or best offer"</label><input class="f-price-max" type="number" value="${l.price_cop_max}"></div>
+  `;
+}
+
 function draftCard(l) {
   return `
     <div class="admin-item" data-id="${l.id}">
       <img src="${WORKER_BASE_URL}/images/${l.image_key}" alt="">
       <div class="admin-fields">
-        <div><label>Title (English)</label><input class="f-title-en" value="${escapeHtml(titleEn(l))}"></div>
-        <div><label>Título (Español)</label><input class="f-title-es" value="${escapeHtml(titleEs(l))}"></div>
-        <div><label>Description (English)</label><textarea class="f-description-en">${escapeHtml(descEn(l))}</textarea></div>
-        <div><label>Descripción (Español)</label><textarea class="f-description-es">${escapeHtml(descEs(l))}</textarea></div>
-        <div class="row">
-          <div><label>Category</label><select class="f-category">${selectOptions(CATEGORIES, l.category)}</select></div>
-          <div><label>Condition</label><select class="f-condition">${selectOptions(CONDITIONS, l.condition)}</select></div>
-        </div>
-        <div><label>Suggested offer (COP) — shown to buyers as "or best offer"</label><input class="f-price-max" type="number" value="${l.price_cop_max}"></div>
+        ${editableFields(l)}
         <div class="admin-actions">
           <button onclick="publishDraft('${l.id}')">Publish</button>
-          <button class="secondary" onclick="saveDraftEdits('${l.id}')">Save edits</button>
+          <button class="secondary" onclick="saveEdits('${l.id}')">Save edits</button>
           <button class="danger" onclick="deleteListing('${l.id}')">Delete</button>
         </div>
       </div>
@@ -71,12 +78,10 @@ function publishedCard(l) {
     <div class="admin-item" data-id="${l.id}">
       <img src="${WORKER_BASE_URL}/images/${l.image_key}" alt="">
       <div class="admin-fields">
-        <div><strong>${escapeHtml(titleEn(l))}</strong> / <em>${escapeHtml(titleEs(l))}</em> <span class="badge ${l.status === "sold" ? "sold" : ""}">${l.status}</span></div>
-        <div>${escapeHtml(descEn(l))}</div>
-        <div><em>${escapeHtml(descEs(l))}</em></div>
-        <div>Suggested offer: ${l.price_cop_max.toLocaleString()} COP, or best offer</div>
+        ${editableFields(l)}
         <div class="admin-actions">
-          ${l.status !== "sold" ? `<button onclick="markSold('${l.id}')">Mark sold</button>` : `<button class="secondary" onclick="markAvailable('${l.id}')">Mark available</button>`}
+          <button onclick="saveEdits('${l.id}')">Save edits</button>
+          ${l.status !== "sold" ? `<button class="secondary" onclick="markSold('${l.id}')">Mark sold</button>` : `<button class="secondary" onclick="markAvailable('${l.id}')">Mark available</button>`}
           <button class="danger" onclick="deleteListing('${l.id}')">Delete</button>
         </div>
       </div>
@@ -106,7 +111,7 @@ async function patchListing(id, updates) {
   return resp.json();
 }
 
-async function saveDraftEdits(id) {
+async function saveEdits(id) {
   await patchListing(id, readFields(id));
   loadAll();
 }
