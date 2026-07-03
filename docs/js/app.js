@@ -75,8 +75,14 @@ function invOf(l) { return l.inventory || 1; }
 function renderListings() {
   const grid = document.getElementById("grid");
   const categoryFilter = document.getElementById("categoryFilter").value;
+  const query = document.getElementById("searchBox").value.trim().toLowerCase();
 
-  const filtered = listings.filter((l) => !categoryFilter || l.category === categoryFilter);
+  const filtered = listings.filter((l) => {
+    if (categoryFilter && l.category !== categoryFilter) return false;
+    if (!query) return true;
+    const haystack = `${titleEn(l)} ${titleEs(l)} ${descEn(l)} ${descEs(l)}`.toLowerCase();
+    return haystack.includes(query);
+  });
 
   if (!filtered.length) {
     grid.innerHTML = `<div class="empty-state">No items match that filter yet.</div>`;
@@ -216,6 +222,8 @@ document.addEventListener("DOMContentLoaded", () => {
   categorySelect.innerHTML = `<option value="">All categories</option>` +
     CATEGORIES.map((c) => `<option value="${c}">${c}</option>`).join("");
   categorySelect.addEventListener("change", renderListings);
+
+  document.getElementById("searchBox").addEventListener("input", renderListings);
 
   document.getElementById("cartToggle").addEventListener("click", () => toggleCart(true));
   document.getElementById("cartClose").addEventListener("click", () => toggleCart(false));

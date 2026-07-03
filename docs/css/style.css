@@ -69,6 +69,10 @@ button.danger { background: var(--danger); }
 
 button:disabled { background: #ccc; cursor: not-allowed; }
 
+.search-box {
+  width: 12rem;
+}
+
 .cart-toggle {
   margin-left: auto;
   position: relative;
