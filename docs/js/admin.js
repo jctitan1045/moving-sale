@@ -41,6 +41,7 @@ function titleEn(l) { return l.title_en || l.title || ""; }
 function titleEs(l) { return l.title_es || l.title || l.title_en || ""; }
 function descEn(l) { return l.description_en || l.description || ""; }
 function descEs(l) { return l.description_es || l.description || l.description_en || ""; }
+function invOf(l) { return l.inventory || 1; }
 
 function editableFields(l) {
   return `
@@ -53,7 +54,10 @@ function editableFields(l) {
       <div><label>Category</label><select class="f-category">${selectOptions(CATEGORIES, l.category)}</select></div>
       <div><label>Condition</label><select class="f-condition">${selectOptions(CONDITIONS, l.condition)}</select></div>
     </div>
-    <div><label>Suggested offer (COP) — shown to buyers as "or best offer"</label><input class="f-price-max" type="number" value="${l.price_cop_max}"></div>
+    <div class="row">
+      <div><label>Suggested offer (COP) — shown to buyers as "or best offer"</label><input class="f-price-max" type="number" value="${l.price_cop_max}"></div>
+      <div><label>Inventory (how many available)</label><input class="f-inventory" type="number" min="0" value="${invOf(l)}"></div>
+    </div>
   `;
 }
 
@@ -99,6 +103,7 @@ function readFields(id) {
     category: card.querySelector(".f-category").value,
     condition: card.querySelector(".f-condition").value,
     price_cop_max: parseInt(card.querySelector(".f-price-max").value) || 0,
+    inventory: parseInt(card.querySelector(".f-inventory").value) || 0,
   };
 }
 

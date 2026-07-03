@@ -165,6 +165,7 @@ async function processPhotoIntake({ from, body, mediaUrl0, mediaContentType0 }, 
       price_cop_min: parsed.price_cop_min,
       price_cop_max: parsed.price_cop_max,
       ...usd,
+      inventory: 1,
       image_key: id,
       status: "draft",
       created_at: new Date().toISOString(),
@@ -184,6 +185,7 @@ async function processPhotoIntake({ from, body, mediaUrl0, mediaContentType0 }, 
       price_cop_max: 0,
       price_usd_min: 0,
       price_usd_max: 0,
+      inventory: 1,
       image_key: id,
       status: "draft",
       created_at: new Date().toISOString(),
@@ -315,7 +317,13 @@ async function handleCheckout(request, env) {
   for (const cartItem of items) {
     const listing = await getListing(cartItem.id, env);
     if (listing) {
-      lines.push(`- ${listing.title_en} x${cartItem.qty || 1} (suggested offer: ${listing.price_cop_max.toLocaleString()} COP, OBO)${listing.status === "sold" ? " [already marked sold]" : ""}`);
+      const qty = cartItem.qty || 1;
+      const inventory = listing.inventory || 1;
+      const flags = [
+        listing.status === "sold" ? "already marked sold" : null,
+        qty > inventory ? `requested ${qty}, only ${inventory} in stock` : null,
+      ].filter(Boolean);
+      lines.push(`- ${listing.title_en} x${qty} (suggested offer: ${listing.price_cop_max.toLocaleString()} COP, OBO)${flags.length ? ` [${flags.join(", ")}]` : ""}`);
     } else {
       lines.push(`- ${cartItem.title || cartItem.id} x${cartItem.qty || 1} [listing not found]`);
     }

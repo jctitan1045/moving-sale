@@ -14,20 +14,27 @@ function getCart() {
 function saveCart(cart) {
   localStorage.setItem(CART_KEY, JSON.stringify(cart));
   renderCart();
+  renderListings();
 }
 
 function addToCart(id) {
+  const listing = listings.find((l) => l.id === id);
+  const max = listing ? invOf(listing) : Infinity;
   const cart = getCart();
-  cart[id] = (cart[id] || 0) + 1;
+  const next = (cart[id] || 0) + 1;
+  if (next > max) return;
+  cart[id] = next;
   saveCart(cart);
 }
 
 function setQty(id, qty) {
+  const listing = listings.find((l) => l.id === id);
+  const max = listing ? invOf(listing) : Infinity;
   const cart = getCart();
   if (qty <= 0) {
     delete cart[id];
   } else {
-    cart[id] = qty;
+    cart[id] = Math.min(qty, max);
   }
   saveCart(cart);
 }
@@ -49,6 +56,7 @@ function titleEn(l) { return l.title_en || l.title || ""; }
 function titleEs(l) { return l.title_es || l.title || l.title_en || ""; }
 function descEn(l) { return l.description_en || l.description || ""; }
 function descEs(l) { return l.description_es || l.description || l.description_en || ""; }
+function invOf(l) { return l.inventory || 1; }
 
 function renderListings() {
   const grid = document.getElementById("grid");
@@ -61,11 +69,24 @@ function renderListings() {
     return;
   }
 
-  grid.innerHTML = filtered.map((l) => `
+  const cart = getCart();
+
+  grid.innerHTML = filtered.map((l) => {
+    const max = invOf(l);
+    const inCart = cart[l.id] || 0;
+    const soldOut = l.status === "sold";
+    const maxed = inCart >= max;
+    const disabled = soldOut || maxed;
+    let buttonLabel = "Add to cart / Agregar al carrito";
+    if (soldOut) buttonLabel = "Sold / Vendido";
+    else if (maxed) buttonLabel = "Max in cart / Máximo en el carrito";
+
+    return `
     <div class="card">
       <img src="${WORKER_BASE_URL}/images/${l.image_key}" alt="${escapeHtml(titleEn(l))}" loading="lazy">
       <div class="card-body">
-        <span class="badge ${l.status === "sold" ? "sold" : ""}">${l.status === "sold" ? "SOLD" : l.condition}</span>
+        <span class="badge ${soldOut ? "sold" : ""}">${soldOut ? "SOLD" : l.condition}</span>
+        ${max > 1 && !soldOut ? `<span class="badge">${max} available / disponibles</span>` : ""}
         <h3>${escapeHtml(titleEn(l))}</h3>
         <h4 class="title-es">${escapeHtml(titleEs(l))}</h4>
         <p>${escapeHtml(descEn(l))}</p>
@@ -75,12 +96,11 @@ function renderListings() {
           ${fmtCop(l.price_cop_max)} <span class="obo">or best offer / o mejor oferta</span>
           <div class="usd">${fmtUsd(l.price_usd_max)}</div>
         </div>
-        <button ${l.status === "sold" ? "disabled" : ""} onclick="addToCart('${l.id}')">
-          ${l.status === "sold" ? "Sold / Vendido" : "Add to cart / Agregar al carrito"}
-        </button>
+        <button ${disabled ? "disabled" : ""} onclick="addToCart('${l.id}')">${buttonLabel}</button>
       </div>
     </div>
-  `).join("");
+  `;
+  }).join("");
 }
 
 function escapeHtml(str) {
@@ -110,7 +130,7 @@ function renderCart() {
     return `
       <div class="cart-line">
         <span class="name">${escapeHtml(titleEn(listing))}</span>
-        <input type="number" min="0" value="${cart[id]}" onchange="setQty('${id}', parseInt(this.value) || 0)">
+        <input type="number" min="0" max="${invOf(listing)}" value="${cart[id]}" onchange="setQty('${id}', parseInt(this.value) || 0)">
         <button class="secondary" onclick="setQty('${id}', 0)">✕</button>
       </div>
     `;
