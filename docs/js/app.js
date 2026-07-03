@@ -75,11 +75,12 @@ function invOf(l) { return l.inventory || 1; }
 function renderListings() {
   const grid = document.getElementById("grid");
   const categoryFilter = document.getElementById("categoryFilter").value;
-  const hideSold = document.getElementById("hideSoldToggle").checked;
 
+  // Sold items are never shown on the public storefront — marking something
+  // sold in admin removes it from here automatically, no visitor-facing toggle.
   const filtered = listings.filter((l) => {
+    if (l.status === "sold") return false;
     if (categoryFilter && l.category !== categoryFilter) return false;
-    if (hideSold && l.status === "sold") return false;
     return true;
   });
 
@@ -93,12 +94,8 @@ function renderListings() {
   grid.innerHTML = filtered.map((l) => {
     const max = invOf(l);
     const inCart = cart[l.id] || 0;
-    const soldOut = l.status === "sold";
     const maxed = inCart >= max;
-    const disabled = soldOut || maxed;
-    let buttonLabel = "Add to cart / Agregar al carrito";
-    if (soldOut) buttonLabel = "Sold / Vendido";
-    else if (maxed) buttonLabel = "Max in cart / Máximo en el carrito";
+    const buttonLabel = maxed ? "Max in cart / Máximo en el carrito" : "Add to cart / Agregar al carrito";
 
     const expanded = expandedIds.has(l.id);
 
@@ -106,8 +103,8 @@ function renderListings() {
     <div class="card">
       <img src="${WORKER_BASE_URL}/images/${l.image_key}" alt="${escapeHtml(titleEn(l))}" loading="lazy">
       <div class="card-body">
-        <span class="badge ${soldOut ? "sold" : ""}">${soldOut ? "SOLD" : l.condition}</span>
-        ${max > 1 && !soldOut ? `<span class="badge">${max} available / disponibles</span>` : ""}
+        <span class="badge">${l.condition}</span>
+        ${max > 1 ? `<span class="badge">${max} available / disponibles</span>` : ""}
         <h3>${escapeHtml(titleEn(l))}</h3>
         <h4 class="title-es">${escapeHtml(titleEs(l))}</h4>
         <button class="read-desc-btn" onclick="toggleDescription('${l.id}')">
@@ -123,7 +120,7 @@ function renderListings() {
           <div class="obo">or best offer / o mejor oferta</div>
           <div class="usd">${fmtUsd(l.price_usd_max)}</div>
         </div>
-        <button ${disabled ? "disabled" : ""} onclick="addToCart('${l.id}')">${buttonLabel}</button>
+        <button ${maxed ? "disabled" : ""} onclick="addToCart('${l.id}')">${buttonLabel}</button>
       </div>
     </div>
   `;
@@ -221,8 +218,6 @@ document.addEventListener("DOMContentLoaded", () => {
   categorySelect.innerHTML = `<option value="">All categories</option>` +
     CATEGORIES.map((c) => `<option value="${c}">${c}</option>`).join("");
   categorySelect.addEventListener("change", renderListings);
-
-  document.getElementById("hideSoldToggle").addEventListener("change", renderListings);
 
   document.getElementById("cartToggle").addEventListener("click", () => toggleCart(true));
   document.getElementById("cartClose").addEventListener("click", () => toggleCart(false));
