@@ -1,5 +1,5 @@
 const TOKEN_KEY = "moving_sale_admin_token";
-const CATEGORIES = ["furniture", "appliances", "electronics", "kitchenware", "decor", "clothing", "books", "outdoor", "pet", "other"];
+const CATEGORIES = ["furniture", "appliances", "electronics", "kitchenware", "decor", "clothing", "books", "outdoor", "sports", "pet", "other"];
 const CONDITIONS = ["new", "like_new", "good", "fair", "worn"];
 
 function getToken() {

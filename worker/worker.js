@@ -137,7 +137,7 @@ Write both an English and a Spanish version of the title and description — nat
             title_es: { type: "string", description: "Short, specific item name, in natural Spanish" },
             description_en: { type: "string", description: "2-3 honest sentences describing the item and its visible condition/wear, in English" },
             description_es: { type: "string", description: "2-3 honest sentences describing the item and its visible condition/wear, in natural Spanish" },
-            category: { type: "string", enum: ["furniture", "appliances", "electronics", "kitchenware", "decor", "clothing", "books", "outdoor", "pet", "other"] },
+            category: { type: "string", enum: ["furniture", "appliances", "electronics", "kitchenware", "decor", "clothing", "books", "outdoor", "sports", "pet", "other"] },
             condition: { type: "string", enum: ["new", "like_new", "good", "fair", "worn"] },
             price_new_cop: { type: "integer", description: "Colombian pesos — what this item costs brand new at retail in Colombia today. Reasoning anchor for the resale price below, not shown to buyers." },
             price_cop_min: { type: "integer", description: "Colombian pesos — bottom of the condition-based discount band applied to price_new_cop" },

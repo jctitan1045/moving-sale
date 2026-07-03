@@ -1,5 +1,5 @@
 const CART_KEY = "moving_sale_cart";
-const CATEGORIES = ["furniture", "appliances", "electronics", "kitchenware", "decor", "clothing", "books", "outdoor", "pet", "other"];
+const CATEGORIES = ["furniture", "appliances", "electronics", "kitchenware", "decor", "clothing", "books", "outdoor", "sports", "pet", "other"];
 
 let listings = [];
 const expandedIds = new Set();
