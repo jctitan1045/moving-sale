@@ -128,12 +128,18 @@ function renderCart() {
 
   if (!ids.length) {
     list.innerHTML = `<div class="empty-state">Your cart is empty.</div>`;
+    document.getElementById("cartTotal").innerHTML = "";
     return;
   }
+
+  let totalCop = 0;
+  let totalUsd = 0;
 
   list.innerHTML = ids.map((id) => {
     const listing = listings.find((l) => l.id === id);
     if (!listing) return "";
+    totalCop += listing.price_cop_max * cart[id];
+    totalUsd += listing.price_usd_max * cart[id];
     return `
       <div class="cart-line">
         <span class="name">${escapeHtml(titleEn(listing))}</span>
@@ -142,6 +148,11 @@ function renderCart() {
       </div>
     `;
   }).join("");
+
+  document.getElementById("cartTotal").innerHTML = `
+    <span>Total (suggested)</span>
+    <span>${fmtCop(totalCop)} · ${fmtUsd(totalUsd)}</span>
+  `;
 }
 
 function toggleCart(open) {
