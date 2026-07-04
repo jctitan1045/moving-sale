@@ -104,36 +104,14 @@ function descEn(l) { return l.description_en || l.description || ""; }
 function descEs(l) { return l.description_es || l.description || l.description_en || ""; }
 function invOf(l) { return l.inventory || 1; }
 
-function renderListings() {
-  const grid = document.getElementById("grid");
-  const categoryFilter = document.getElementById("categoryFilter").value;
+function cardHtml(l, cart) {
+  const max = invOf(l);
+  const inCart = cart[l.id] || 0;
+  const maxed = inCart >= max;
+  const buttonLabel = maxed ? "Max in cart / Máximo en el carrito" : "Add to cart / Agregar al carrito";
+  const expanded = expandedIds.has(l.id);
 
-  // Sold items are never shown on the public storefront — marking something
-  // sold in admin removes it from here automatically, no visitor-facing toggle.
-  const filtered = listings.filter((l) => {
-    if (l.status === "sold") return false;
-    if (categoryFilter && l.category !== categoryFilter) return false;
-    return true;
-  });
-
-  if (!filtered.length) {
-    grid.innerHTML = `<div class="empty-state">No items match that filter yet.</div>`;
-    return;
-  }
-
-  filtered.sort((a, b) => titleEn(a).localeCompare(titleEn(b)));
-
-  const cart = getCart();
-
-  grid.innerHTML = filtered.map((l) => {
-    const max = invOf(l);
-    const inCart = cart[l.id] || 0;
-    const maxed = inCart >= max;
-    const buttonLabel = maxed ? "Max in cart / Máximo en el carrito" : "Add to cart / Agregar al carrito";
-
-    const expanded = expandedIds.has(l.id);
-
-    return `
+  return `
     <div class="card">
       <img src="${WORKER_BASE_URL}/images/${l.image_key}" alt="${escapeHtml(titleEn(l))}" loading="lazy">
       <button class="category-icon-btn" onclick="filterByCategory('${l.category}')" title="${CATEGORY_LABELS[l.category] || l.category}">
@@ -161,7 +139,46 @@ function renderListings() {
       </div>
     </div>
   `;
-  }).join("");
+}
+
+function renderListings() {
+  const grid = document.getElementById("grid");
+  const categoryFilter = document.getElementById("categoryFilter").value;
+
+  // Sold items are never shown on the public storefront — marking something
+  // sold in admin removes it from here automatically, no visitor-facing toggle.
+  const filtered = listings.filter((l) => {
+    if (l.status === "sold") return false;
+    if (categoryFilter && l.category !== categoryFilter) return false;
+    return true;
+  });
+
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="empty-state">No items match that filter yet.</div>`;
+    return;
+  }
+
+  const cart = getCart();
+
+  // Group by category (in CATEGORIES order), each becoming its own heading
+  // section, with items sorted alphabetically by English title within it.
+  const sections = CATEGORIES
+    .map((cat) => ({
+      cat,
+      items: filtered
+        .filter((l) => l.category === cat)
+        .sort((a, b) => titleEn(a).localeCompare(titleEn(b))),
+    }))
+    .filter((s) => s.items.length > 0);
+
+  grid.innerHTML = sections.map((s) => `
+    <div class="category-section">
+      <h2 class="category-heading">${CATEGORY_ICONS[s.cat] || "📦"} ${CATEGORY_LABELS[s.cat] || s.cat}</h2>
+      <div class="grid">
+        ${s.items.map((l) => cardHtml(l, cart)).join("")}
+      </div>
+    </div>
+  `).join("");
 }
 
 function escapeHtml(str) {
