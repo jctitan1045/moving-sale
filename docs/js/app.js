@@ -97,6 +97,15 @@ function titleEs(l) { return l.title_es || l.title || l.title_en || ""; }
 function descEn(l) { return l.description_en || l.description || ""; }
 function descEs(l) { return l.description_es || l.description || l.description_en || ""; }
 function invOf(l) { return l.inventory || 1; }
+function imagesOf(l) { return l.image_keys && l.image_keys.length ? l.image_keys : (l.image_key ? [l.image_key] : []); }
+
+const carouselIndex = new Map();
+
+function carouselNav(id, delta, total) {
+  const current = carouselIndex.get(id) || 0;
+  carouselIndex.set(id, (current + delta + total) % total);
+  renderListings();
+}
 
 function cardHtml(l, cart) {
   const max = invOf(l);
@@ -105,9 +114,19 @@ function cardHtml(l, cart) {
   const buttonLabel = maxed ? "Max in cart / Máximo en el carrito" : "Add to cart / Agregar al carrito";
   const expanded = expandedIds.has(l.id);
 
+  const imgs = imagesOf(l);
+  const idx = Math.min(carouselIndex.get(l.id) || 0, imgs.length - 1);
+
   return `
     <div class="card">
-      <img src="${WORKER_BASE_URL}/images/${l.image_key}" alt="${escapeHtml(titleEn(l))}" loading="lazy">
+      <div class="card-image-wrap">
+        <img src="${WORKER_BASE_URL}/images/${imgs[idx]}" alt="${escapeHtml(titleEn(l))}" loading="lazy">
+        ${imgs.length > 1 ? `
+          <button class="carousel-nav prev" onclick="carouselNav('${l.id}', -1, ${imgs.length})">‹</button>
+          <button class="carousel-nav next" onclick="carouselNav('${l.id}', 1, ${imgs.length})">›</button>
+          <div class="carousel-dots">${imgs.map((_, i) => `<span class="dot ${i === idx ? "active" : ""}"></span>`).join("")}</div>
+        ` : ""}
+      </div>
       <div class="card-body">
         <span class="badge">${l.condition}</span>
         ${max > 1 ? `<span class="badge">${max} available / disponibles</span>` : ""}

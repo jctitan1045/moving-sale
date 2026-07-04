@@ -55,6 +55,10 @@ function titleEs(l) { return l.title_es || l.title || l.title_en || ""; }
 function descEn(l) { return l.description_en || l.description || ""; }
 function descEs(l) { return l.description_es || l.description || l.description_en || ""; }
 function invOf(l) { return l.inventory || 1; }
+function imagesOf(l) { return l.image_keys && l.image_keys.length ? l.image_keys : (l.image_key ? [l.image_key] : []); }
+
+let allDrafts = [];
+let allPublished = [];
 
 // Published listings default to read-only view mode; ids in here are being edited.
 // Drafts always render in edit mode (they need review before going live).
@@ -99,14 +103,30 @@ function savedFlash(id) {
   return justSaved.has(id) ? `<div class="saved-flash">✓ Saved</div>` : "";
 }
 
+function photoStrip(l) {
+  const imgs = imagesOf(l);
+  if (imgs.length <= 1) return "";
+  return `
+    <div class="photo-strip">
+      ${imgs.map((imgId, i) => `
+        <div class="photo-thumb">
+          <img src="${WORKER_BASE_URL}/images/${imgId}" alt="">
+          <button onclick="removePhoto('${l.id}', ${i})" title="Remove this photo / Quitar esta foto">✕</button>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
 function draftCard(l) {
   return `
     <div class="admin-item" data-id="${l.id}">
-      <img src="${WORKER_BASE_URL}/images/${l.image_key}" alt="">
+      <img src="${WORKER_BASE_URL}/images/${imagesOf(l)[0]}" alt="">
       <div class="admin-fields">
         ${modeBadge("draft")}
         ${savedFlash(l.id)}
         ${l.price_new_cop ? `<div class="ai-price-note">AI reasoning: new ≈ ${l.price_new_cop.toLocaleString()} COP → floor ${l.price_cop_min.toLocaleString()} / offer ${l.price_cop_max.toLocaleString()}</div>` : ""}
+        ${photoStrip(l)}
         ${editableFields(l)}
         <div class="admin-actions">
           <button onclick="publishDraft('${l.id}')">Publish</button>
@@ -122,11 +142,12 @@ function publishedCard(l) {
   const editing = editingPublished.has(l.id);
   return `
     <div class="admin-item ${editing ? "is-editing" : ""}" data-id="${l.id}">
-      <img src="${WORKER_BASE_URL}/images/${l.image_key}" alt="">
+      <img src="${WORKER_BASE_URL}/images/${imagesOf(l)[0]}" alt="">
       <div class="admin-fields">
         <span class="badge ${l.status === "sold" ? "sold" : ""}">${l.status}</span>
         ${modeBadge(editing ? "editing" : "live")}
         ${savedFlash(l.id)}
+        ${photoStrip(l)}
         ${editing ? editableFields(l) : readOnlyFields(l)}
         <div class="admin-actions">
           ${editing ? `
@@ -205,6 +226,16 @@ async function deleteListing(id) {
   loadAll();
 }
 
+async function removePhoto(id, index) {
+  if (!confirm("Remove this photo from the listing? / ¿Quitar esta foto del anuncio?")) return;
+  const listing = allDrafts.find((l) => l.id === id) || allPublished.find((l) => l.id === id);
+  if (!listing) return;
+  const imgs = imagesOf(listing).slice();
+  imgs.splice(index, 1);
+  await patchListing(id, { image_keys: imgs });
+  loadAll();
+}
+
 async function loadFxRate() {
   const resp = await fetch(`${WORKER_BASE_URL}/api/admin/config`, { headers: authHeaders() });
   const data = await resp.json();
@@ -224,15 +255,15 @@ async function saveFxRate() {
 
 async function loadAll() {
   const draftsResp = await fetch(`${WORKER_BASE_URL}/api/admin/drafts`, { headers: authHeaders() });
-  const drafts = await draftsResp.json();
-  document.getElementById("drafts").innerHTML = drafts.length
-    ? drafts.map(draftCard).join("")
+  allDrafts = await draftsResp.json();
+  document.getElementById("drafts").innerHTML = allDrafts.length
+    ? allDrafts.map(draftCard).join("")
     : `<div class="empty-state">No pending drafts.</div>`;
 
   const listingsResp = await fetch(`${WORKER_BASE_URL}/api/listings`);
-  const published = await listingsResp.json();
-  document.getElementById("published").innerHTML = published.length
-    ? published.map(publishedCard).join("")
+  allPublished = await listingsResp.json();
+  document.getElementById("published").innerHTML = allPublished.length
+    ? allPublished.map(publishedCard).join("")
     : `<div class="empty-state">Nothing published yet.</div>`;
 
   loadFxRate();

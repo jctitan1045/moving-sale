@@ -1,3 +1,32 @@
+## 2026-07-04 14:25, [tool: Claude Code]
+
+**Focus:** Multi-photo listings (batched WhatsApp sends → one listing with a carousel), plus a run of smaller storefront UX iterations (category headings, bilingual category labels, alphabetical sort, payment badges, pickup map).
+
+**Next session, start here:**
+- Read: `worker/worker.js`'s `processPhotoIntake` for the batching logic
+- In flight: multi-photo batching is deployed but not yet tested with a real WhatsApp burst
+- Single next move: send 2-3 photos of one item within ~60s and confirm they land as one listing with a working carousel
+
+**What happened:**
+- Listings moved from a single `image_key` to an `image_keys` array. Old listings keep working via an `imagesOf(l)` fallback helper (duplicated in app.js/admin.js, matching the existing pattern for title/description fallbacks).
+- Added time-window batching: photos from the same WhatsApp number within 60s of each other join the same draft listing instead of creating a new one, tracked via a short-TTL `pending_batch:{from}` KV key. Only the first photo in a batch triggers the AI call — later photos just append to `image_keys` and send a lightweight "photo added" confirmation.
+- Storefront cards with >1 photo get a simple carousel (prev/next arrows + dot indicator, no library). Admin shows all photos as a removable thumbnail strip instead — review needs to see everything at once, not page through it.
+- Along the way: reorganized the storefront into per-category heading sections (removed the redundant per-photo category icon click-filter once headings made it unnecessary), added bilingual category labels, alphabetized listings within each section, added a "Pay by" badge row and an OpenStreetMap pickup pin, and reworked the AI pricing prompt to reason from a new-retail-price anchor instead of guessing a used price directly (catches cases like "actually brand new" that a blind guess gets wrong).
+- Fixed a real WhatsApp checkout flow: replaced the old form-based checkout (name/phone fields + server relay, which hit Twilio's 24h session-window limit) with a `wa.me` click-to-chat link that lets the buyer message Jordan directly — sidesteps the API session-window problem entirely since it's a real person-to-person message.
+
+**Decisions:**
+- [DECISION] Batch grouping by time window rather than by NumMedia>1 in a single webhook call — WhatsApp actually delivers a multi-photo send as separate rapid messages, not one message with multiple attachments, so time-window grouping is what actually works.
+- [DECISION] Only the first photo in a batch calls the AI — cheaper, and subsequent photos are just more angles of the same item, not new information worth re-analyzing.
+- [DECISION] Admin shows all photos as a flat removable strip, not a carousel — review workflow wants to see everything at once.
+
+**Still open:**
+- Batching hasn't been tested with a real WhatsApp photo burst yet — only deployed and syntax-checked.
+- GitHub Pages deploys have been intermittently flaky (transient failures, and the Pages status API lagging behind what's actually served) — direct `curl` checks of served content have been the more reliable verification method today.
+
+**Files touched:** `worker/worker.js`, `docs/js/app.js`, `docs/js/admin.js`, `docs/css/style.css`, `docs/index.html`, `TODOS.md`
+
+---
+
 ## 2026-07-02 09:15, [tool: Claude Code]
 
 **Focus:** Initial build of the moving-sale marketplace — full frontend, Worker backend, and the one integration edit to `daily-assistant/worker.js`.

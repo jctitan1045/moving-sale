@@ -1,23 +1,15 @@
 # TODOs
 
-Last updated: 2026-07-02
+Last updated: 2026-07-04
 
 ## Next
-- [ ] Create Cloudflare KV namespace and fill in `worker/wrangler.toml`
-- [ ] Set all Worker secrets (`wrangler secret put`)
-- [ ] Deploy the Worker and update `docs/js/config.js` with the live URL
-- [ ] Add the two new secrets to `daily-assistant`'s Worker and redeploy it with the forwarding edit
-- [ ] Create the `moving-sale` GitHub repo, push, enable Pages on `main`/`docs`
-- [ ] Update `ALLOWED_ORIGIN`/`STOREFRONT_URL` in `wrangler.toml` to the live Pages URL and redeploy
-- [ ] Confirm the Twilio sandbox join is still active
-- [ ] Check the Cloudflare account's Workers plan tier (Free vs Paid) before relying on real-photo intake
-- [ ] Send a real test photo end to end and verify a draft appears in admin
-
-## Soon
-- [ ] Set an initial `config:fx_rate` value from admin.html
-- [ ] Walk through the storefront + cart + checkout flow as a test buyer
+- [ ] Send a real burst of 2-3 photos of one item within ~60s and confirm they group into a single listing with a carousel (multi-photo batching just built, untested live)
 - [ ] Decide whether the repo should stay public or move private
 
+## Soon
+- [ ] Consider a search box or sort-by-price if inventory grows past what category headings alone can organize
+- [ ] Revisit AI pricing accuracy periodically — spot-check a few listings against real Medellín secondhand comps
+
 ## Someday
-- [ ] Bilingual (Spanish) listings, if local buyers turn out to need it
-- [ ] Simple photo gallery per item (multiple angles) instead of one image
+- [ ] Social preview image (Open Graph tags) for nicer link previews when shared in WhatsApp/groups
+- [ ] Freshness check before WhatsApp checkout (re-verify item isn't sold right before opening the wa.me link)

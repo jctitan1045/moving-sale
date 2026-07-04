@@ -3,6 +3,7 @@
 // public storefront API, admin review API, WhatsApp checkout handoff.
 
 const DEFAULT_FX_RATE = 4000; // COP per USD, admin-editable via /api/admin/config
+const BATCH_WINDOW_MS = 60000; // photos from the same sender within this window join one listing
 
 function corsHeaders(env) {
   return {
@@ -97,6 +98,25 @@ async function processPhotoIntake({ from, body, mediaUrl0, mediaContentType0 }, 
 
   await env.KV.put(`image:${id}`, imageBuffer, { metadata: { contentType } });
 
+  // Photos sent within BATCH_WINDOW_MS of each other from the same number join
+  // the same listing (extra angles of one item) instead of starting a new one —
+  // matches how WhatsApp actually delivers a multi-photo send: as separate
+  // back-to-back messages, not one message with multiple attachments.
+  if (from) {
+    const batchRaw = await env.KV.get(`pending_batch:${from}`);
+    if (batchRaw) {
+      const batch = JSON.parse(batchRaw);
+      const existing = await getListing(batch.listingId, env);
+      if (existing && existing.status === "draft") {
+        existing.image_keys = [...(existing.image_keys || (existing.image_key ? [existing.image_key] : [])), id];
+        await saveListing(existing, env);
+        await env.KV.put(`pending_batch:${from}`, JSON.stringify({ listingId: existing.id }), { expirationTtl: Math.ceil(BATCH_WINDOW_MS / 1000) });
+        await sendWhatsApp(env.TWILIO_TO, `📸 Added photo ${existing.image_keys.length} to "${existing.title_en}"`, env);
+        return existing.id;
+      }
+    }
+  }
+
   const base64Image = arrayBufferToBase64(imageBuffer);
 
   const captionLine = body && body.trim()
@@ -180,7 +200,7 @@ Write both an English and a Spanish version of the title and description — nat
       price_cop_max: parsed.price_cop_max,
       ...usd,
       inventory: 1,
-      image_key: id,
+      image_keys: [id],
       status: "draft",
       created_at: new Date().toISOString(),
       source_phone: from || "",
@@ -200,7 +220,7 @@ Write both an English and a Spanish version of the title and description — nat
       price_usd_min: 0,
       price_usd_max: 0,
       inventory: 1,
-      image_key: id,
+      image_keys: [id],
       status: "draft",
       created_at: new Date().toISOString(),
       source_phone: from || "",
@@ -208,6 +228,10 @@ Write both an English and a Spanish version of the title and description — nat
   }
 
   await saveListing(listing, env);
+
+  if (from) {
+    await env.KV.put(`pending_batch:${from}`, JSON.stringify({ listingId: listing.id }), { expirationTtl: Math.ceil(BATCH_WINDOW_MS / 1000) });
+  }
 
   const confirmMsg = parsed
     ? `📦 Draft ready: "${listing.title_en}"\nSuggested offer: ${listing.price_cop_max.toLocaleString()} COP, or best offer\nReview & publish: ${env.STOREFRONT_URL}/admin.html`
@@ -297,8 +321,10 @@ async function handlePatchListing(id, request, env) {
 }
 
 async function handleDeleteListing(id, env) {
+  const listing = await getListing(id, env);
+  const imageKeys = listing ? (listing.image_keys || (listing.image_key ? [listing.image_key] : [id])) : [id];
   await env.KV.delete(`listing:${id}`);
-  await env.KV.delete(`image:${id}`);
+  await Promise.all(imageKeys.map((imgId) => env.KV.delete(`image:${imgId}`)));
   return jsonResponse({ ok: true }, 200, env);
 }
 
