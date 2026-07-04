@@ -121,6 +121,8 @@ function renderListings() {
     return;
   }
 
+  filtered.sort((a, b) => titleEn(a).localeCompare(titleEn(b)));
+
   const cart = getCart();
 
   grid.innerHTML = filtered.map((l) => {
