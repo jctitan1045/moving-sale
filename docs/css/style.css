@@ -194,7 +194,6 @@ main {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  position: relative;
 }
 
 .card img {
@@ -202,28 +201,6 @@ main {
   aspect-ratio: 1 / 1;
   object-fit: cover;
   background: #eee;
-}
-
-.category-icon-btn {
-  position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
-  width: 2.25rem;
-  height: 2.25rem;
-  padding: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid var(--border);
-  font-size: 1.1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-}
-
-.category-icon-btn:hover {
-  background: white;
-  transform: scale(1.05);
 }
 
 .card-body {

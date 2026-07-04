@@ -27,12 +27,6 @@ const CATEGORY_ICONS = {
   other: "📦",
 };
 
-function filterByCategory(category) {
-  document.getElementById("categoryFilter").value = category;
-  renderListings();
-  document.getElementById("grid").scrollIntoView({ behavior: "smooth" });
-}
-
 let listings = [];
 const expandedIds = new Set();
 
@@ -114,9 +108,6 @@ function cardHtml(l, cart) {
   return `
     <div class="card">
       <img src="${WORKER_BASE_URL}/images/${l.image_key}" alt="${escapeHtml(titleEn(l))}" loading="lazy">
-      <button class="category-icon-btn" onclick="filterByCategory('${l.category}')" title="${CATEGORY_LABELS[l.category] || l.category}">
-        ${CATEGORY_ICONS[l.category] || "📦"}
-      </button>
       <div class="card-body">
         <span class="badge">${l.condition}</span>
         ${max > 1 ? `<span class="badge">${max} available / disponibles</span>` : ""}
