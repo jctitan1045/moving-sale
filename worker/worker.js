@@ -381,7 +381,7 @@ export default {
         return await handleGetListings(env);
       }
 
-      if (request.method === "GET" && path.startsWith("/images/")) {
+      if ((request.method === "GET" || request.method === "HEAD") && path.startsWith("/images/")) {
         return await handleGetImage(path.replace("/images/", ""), env);
       }
 
