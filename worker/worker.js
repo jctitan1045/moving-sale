@@ -320,6 +320,23 @@ async function handlePatchListing(id, request, env) {
   return jsonResponse(merged, 200, env);
 }
 
+async function handleAddPhoto(id, request, env) {
+  const listing = await getListing(id, env);
+  if (!listing) return jsonResponse({ error: "not found" }, 404, env);
+
+  const contentType = request.headers.get("Content-Type") || "image/jpeg";
+  const imageBuffer = await request.arrayBuffer();
+  if (!imageBuffer.byteLength) return jsonResponse({ error: "no image data" }, 400, env);
+
+  const imageId = crypto.randomUUID();
+  await env.KV.put(`image:${imageId}`, imageBuffer, { metadata: { contentType } });
+
+  listing.image_keys = [...(listing.image_keys || (listing.image_key ? [listing.image_key] : [])), imageId];
+  await saveListing(listing, env);
+
+  return jsonResponse(listing, 200, env);
+}
+
 async function handleDeleteListing(id, env) {
   const listing = await getListing(id, env);
   const imageKeys = listing ? (listing.image_keys || (listing.image_key ? [listing.image_key] : [id])) : [id];
@@ -371,6 +388,11 @@ export default {
       if (request.method === "GET" && path === "/api/admin/drafts") {
         if (!isAdminAuthorized(request, env)) return jsonResponse({ error: "unauthorized" }, 401, env);
         return await handleGetDrafts(env);
+      }
+
+      if (request.method === "POST" && path.startsWith("/api/admin/listings/") && path.endsWith("/photos")) {
+        if (!isAdminAuthorized(request, env)) return jsonResponse({ error: "unauthorized" }, 401, env);
+        return await handleAddPhoto(path.replace("/api/admin/listings/", "").replace("/photos", ""), request, env);
       }
 
       if (request.method === "PATCH" && path.startsWith("/api/admin/listings/")) {

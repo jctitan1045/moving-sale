@@ -105,17 +105,31 @@ function savedFlash(id) {
 
 function photoStrip(l) {
   const imgs = imagesOf(l);
-  if (imgs.length <= 1) return "";
+  const thumbs = imgs.length > 1 ? imgs.map((imgId, i) => `
+    <div class="photo-thumb">
+      <img src="${WORKER_BASE_URL}/images/${imgId}" alt="">
+      <button onclick="removePhoto('${l.id}', ${i})" title="Remove this photo / Quitar esta foto">✕</button>
+    </div>
+  `).join("") : "";
   return `
     <div class="photo-strip">
-      ${imgs.map((imgId, i) => `
-        <div class="photo-thumb">
-          <img src="${WORKER_BASE_URL}/images/${imgId}" alt="">
-          <button onclick="removePhoto('${l.id}', ${i})" title="Remove this photo / Quitar esta foto">✕</button>
-        </div>
-      `).join("")}
+      ${thumbs}
+      <label class="add-photo-btn" title="Add photo / Agregar foto">
+        +
+        <input type="file" accept="image/*" onchange="addPhoto('${l.id}', this.files[0])">
+      </label>
     </div>
   `;
+}
+
+async function addPhoto(id, file) {
+  if (!file) return;
+  await fetch(`${WORKER_BASE_URL}/api/admin/listings/${id}/photos`, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${getToken()}`, "Content-Type": file.type || "image/jpeg" },
+    body: file,
+  });
+  loadAll();
 }
 
 function draftCard(l) {

@@ -516,6 +516,29 @@ main {
   line-height: 1;
 }
 
+.add-photo-btn {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 1.3rem;
+  cursor: pointer;
+  margin: 0;
+}
+
+.add-photo-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.add-photo-btn input[type="file"] {
+  display: none;
+}
+
 .admin-fields label {
   font-size: 0.75rem;
   color: var(--muted);
