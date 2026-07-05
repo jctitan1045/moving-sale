@@ -1,6 +1,10 @@
 const TOKEN_KEY = "moving_sale_admin_token";
 const CATEGORIES = ["furniture", "appliances", "electronics", "kitchenware", "decor", "clothing", "books", "outdoor", "sports", "pet", "other"];
 const CONDITIONS = ["new", "like_new", "good", "fair", "worn"];
+// Midpoints of the same condition discount bands the AI uses when drafting a
+// listing (see worker.js), so nudging the condition here moves the price the
+// same direction/magnitude the AI would have priced it at for that condition.
+const CONDITION_MULTIPLIER = { new: 0.925, like_new: 0.775, good: 0.625, fair: 0.475, worn: 0.325 };
 const CATEGORY_LABELS = {
   furniture: "Furniture / Muebles",
   appliances: "Appliances / Electrodomésticos",
@@ -78,6 +82,20 @@ function updatePricePreview(inputEl) {
   if (preview) preview.textContent = fmtUsdPreview(cop);
 }
 
+function adjustPriceForCondition(selectEl) {
+  const prevCondition = selectEl.dataset.prevCondition;
+  const newCondition = selectEl.value;
+  if (prevCondition && prevCondition !== newCondition) {
+    const card = selectEl.closest(".admin-item");
+    const priceInput = card.querySelector(".f-price-max");
+    const ratio = CONDITION_MULTIPLIER[newCondition] / CONDITION_MULTIPLIER[prevCondition];
+    const current = parseInt(priceInput.value) || 0;
+    priceInput.value = Math.round((current * ratio) / 1000) * 1000;
+    updatePricePreview(priceInput);
+  }
+  selectEl.dataset.prevCondition = newCondition;
+}
+
 function refreshAllPricePreviews() {
   document.querySelectorAll(".f-price-max").forEach((input) => updatePricePreview(input));
 }
@@ -101,7 +119,7 @@ function editableFields(l) {
     <div><label>Descripción (Español)</label><textarea class="f-description-es">${escapeHtml(descEs(l))}</textarea></div>
     <div class="row">
       <div><label>Category</label><select class="f-category">${selectOptions(CATEGORIES, l.category, CATEGORY_LABELS)}</select></div>
-      <div><label>Condition</label><select class="f-condition">${selectOptions(CONDITIONS, l.condition)}</select></div>
+      <div><label>Condition</label><select class="f-condition" data-prev-condition="${l.condition}" onchange="adjustPriceForCondition(this)">${selectOptions(CONDITIONS, l.condition)}</select></div>
     </div>
     <div class="row">
       <div>
