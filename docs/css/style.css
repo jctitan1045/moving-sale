@@ -568,6 +568,12 @@ main {
 .admin-fields textarea { width: 100%; min-height: 3.5rem; resize: vertical; }
 .admin-fields input, .admin-fields select { width: 100%; }
 
+.price-usd-preview {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 0.15rem;
+}
+
 .admin-actions {
   display: flex;
   gap: 0.5rem;

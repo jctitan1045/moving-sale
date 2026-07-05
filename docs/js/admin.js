@@ -59,6 +59,28 @@ function imagesOf(l) { return l.image_keys && l.image_keys.length ? l.image_keys
 
 let allDrafts = [];
 let allPublished = [];
+let currentFxRate = 4000;
+
+function currentFxRateValue() {
+  const el = document.getElementById("fxRate");
+  const v = el ? parseFloat(el.value) : NaN;
+  return v > 0 ? v : currentFxRate;
+}
+
+function fmtUsdPreview(cop) {
+  const usd = Math.round((cop / currentFxRateValue()) * 100) / 100;
+  return `≈ $${usd.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} USD`;
+}
+
+function updatePricePreview(inputEl) {
+  const cop = parseInt(inputEl.value) || 0;
+  const preview = inputEl.parentElement.querySelector(".price-usd-preview");
+  if (preview) preview.textContent = fmtUsdPreview(cop);
+}
+
+function refreshAllPricePreviews() {
+  document.querySelectorAll(".f-price-max").forEach((input) => updatePricePreview(input));
+}
 
 // Published listings default to read-only view mode; ids in here are being edited.
 // Drafts always render in edit mode (they need review before going live).
@@ -82,7 +104,11 @@ function editableFields(l) {
       <div><label>Condition</label><select class="f-condition">${selectOptions(CONDITIONS, l.condition)}</select></div>
     </div>
     <div class="row">
-      <div><label>Suggested offer (COP) — shown to buyers as "or best offer"</label><input class="f-price-max" type="number" value="${l.price_cop_max}"></div>
+      <div>
+        <label>Suggested offer (COP) — shown to buyers as "or best offer"</label>
+        <input class="f-price-max" type="number" value="${l.price_cop_max}" oninput="updatePricePreview(this)">
+        <div class="price-usd-preview">${fmtUsdPreview(l.price_cop_max)}</div>
+      </div>
       <div><label>Inventory (how many available)</label><input class="f-inventory" type="number" min="0" value="${invOf(l)}"></div>
     </div>
   `;
@@ -94,7 +120,7 @@ function readOnlyFields(l) {
     <div>${escapeHtml(descEn(l))}</div>
     <div><em>${escapeHtml(descEs(l))}</em></div>
     <div>${CATEGORY_LABELS[l.category] || l.category} · ${l.condition} · ${invOf(l)} available</div>
-    <div>Suggested offer: ${l.price_cop_max.toLocaleString()} COP, or best offer</div>
+    <div>Suggested offer: ${l.price_cop_max.toLocaleString()} COP (${fmtUsdPreview(l.price_cop_max)}), or best offer</div>
     ${l.status === "sold" && l.sold_price_cop != null ? `<div><strong>Sold for / Vendido por: ${l.sold_price_cop.toLocaleString()} COP</strong></div>` : ""}
     ${l.price_new_cop ? `<div class="ai-price-note">AI reasoning: new ≈ ${l.price_new_cop.toLocaleString()} COP → floor ${l.price_cop_min.toLocaleString()} / offer ${l.price_cop_max.toLocaleString()}</div>` : ""}
   `;
@@ -259,6 +285,7 @@ async function removePhoto(id, index) {
 async function loadFxRate() {
   const resp = await fetch(`${WORKER_BASE_URL}/api/admin/config`, { headers: authHeaders() });
   const data = await resp.json();
+  currentFxRate = data.fx_rate;
   document.getElementById("fxRate").value = data.fx_rate;
 }
 
@@ -289,6 +316,8 @@ function renderTotals() {
 }
 
 async function loadAll() {
+  await loadFxRate();
+
   const draftsResp = await fetch(`${WORKER_BASE_URL}/api/admin/drafts`, { headers: authHeaders() });
   allDrafts = await draftsResp.json();
   document.getElementById("drafts").innerHTML = allDrafts.length
@@ -302,13 +331,13 @@ async function loadAll() {
     : `<div class="empty-state">Nothing published yet.</div>`;
 
   renderTotals();
-  loadFxRate();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("unlockBtn").addEventListener("click", unlock);
   document.getElementById("saveFxRateBtn").addEventListener("click", saveFxRate);
   document.getElementById("refreshBtn").addEventListener("click", loadAll);
+  document.getElementById("fxRate").addEventListener("input", refreshAllPricePreviews);
 
   if (getToken()) {
     document.getElementById("gate").style.display = "none";
