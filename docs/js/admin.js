@@ -334,15 +334,19 @@ async function saveFxRate() {
 function renderGrouped(items, cardFn, emptyMessage) {
   if (!items.length) return `<div class="empty-state">${emptyMessage}</div>`;
 
+  const byTitle = (a, b) => titleEn(a).localeCompare(titleEn(b));
+
   const sections = CATEGORIES
     .map((cat) => ({
       cat,
-      items: items.filter((l) => l.category === cat),
+      items: items.filter((l) => l.category === cat).sort(byTitle),
     }))
     .filter((s) => s.items.length > 0);
 
   const uncategorized = items.filter((l) => !CATEGORIES.includes(l.category));
-  if (uncategorized.length) sections.push({ cat: null, items: uncategorized });
+  if (uncategorized.length) sections.push({ cat: null, items: uncategorized.sort(byTitle) });
+
+  sections.sort((a, b) => (CATEGORY_LABELS[a.cat] || "Other / Otro").localeCompare(CATEGORY_LABELS[b.cat] || "Other / Otro"));
 
   return sections.map((s) => `
     <div class="category-section">
