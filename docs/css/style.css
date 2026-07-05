@@ -420,6 +420,18 @@ main {
   text-align: center;
 }
 
+.totals-box {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.95rem;
+}
+
 .admin-section { margin-bottom: 2rem; }
 
 .admin-item {

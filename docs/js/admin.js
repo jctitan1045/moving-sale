@@ -95,6 +95,7 @@ function readOnlyFields(l) {
     <div><em>${escapeHtml(descEs(l))}</em></div>
     <div>${CATEGORY_LABELS[l.category] || l.category} · ${l.condition} · ${invOf(l)} available</div>
     <div>Suggested offer: ${l.price_cop_max.toLocaleString()} COP, or best offer</div>
+    ${l.status === "sold" && l.sold_price_cop != null ? `<div><strong>Sold for / Vendido por: ${l.sold_price_cop.toLocaleString()} COP</strong></div>` : ""}
     ${l.price_new_cop ? `<div class="ai-price-note">AI reasoning: new ≈ ${l.price_new_cop.toLocaleString()} COP → floor ${l.price_cop_min.toLocaleString()} / offer ${l.price_cop_max.toLocaleString()}</div>` : ""}
   `;
 }
@@ -225,7 +226,12 @@ async function publishDraft(id) {
 }
 
 async function markSold(id) {
-  await patchListing(id, { status: "sold" });
+  const listing = allPublished.find((l) => l.id === id) || allDrafts.find((l) => l.id === id);
+  const suggested = listing ? listing.price_cop_max : 0;
+  const input = prompt(`What did this actually sell for (COP)? / ¿Por cuánto se vendió realmente (COP)?`, suggested);
+  if (input === null) return;
+  const soldPrice = parseInt(input.replace(/[^\d]/g, "")) || 0;
+  await patchListing(id, { status: "sold", sold_price_cop: soldPrice });
   loadAll();
 }
 
@@ -267,6 +273,21 @@ async function saveFxRate() {
   alert("Exchange rate saved. It applies to listings saved/published from now on.");
 }
 
+function renderTotals() {
+  const active = allPublished.filter((l) => l.status !== "sold");
+  const sold = allPublished.filter((l) => l.status === "sold");
+
+  const activeCop = active.reduce((sum, l) => sum + (l.price_cop_max || 0), 0);
+  const activeUsd = active.reduce((sum, l) => sum + (l.price_usd_max || 0), 0);
+  const soldCop = sold.reduce((sum, l) => sum + (l.sold_price_cop != null ? l.sold_price_cop : (l.price_cop_max || 0)), 0);
+  const soldUsd = sold.reduce((sum, l) => sum + (l.sold_price_usd != null ? l.sold_price_usd : (l.price_usd_max || 0)), 0);
+
+  document.getElementById("totals").innerHTML = `
+    <div><strong>${active.length}</strong> listed / en venta — ${activeCop.toLocaleString()} COP · $${activeUsd.toLocaleString()} USD suggested</div>
+    <div><strong>${sold.length}</strong> sold / vendido — ${soldCop.toLocaleString()} COP · $${soldUsd.toLocaleString()} USD actual</div>
+  `;
+}
+
 async function loadAll() {
   const draftsResp = await fetch(`${WORKER_BASE_URL}/api/admin/drafts`, { headers: authHeaders() });
   allDrafts = await draftsResp.json();
@@ -280,6 +301,7 @@ async function loadAll() {
     ? allPublished.map(publishedCard).join("")
     : `<div class="empty-state">Nothing published yet.</div>`;
 
+  renderTotals();
   loadFxRate();
 }
 

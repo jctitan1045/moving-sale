@@ -316,6 +316,12 @@ async function handlePatchListing(id, request, env) {
     merged.price_usd_max = usd.price_usd_max;
   }
 
+  // Actual sale price (may differ from the suggested offer after negotiating) gets its own USD conversion.
+  if (updates.sold_price_cop !== undefined) {
+    const fxRate = await getFxRate(env);
+    merged.sold_price_usd = Math.round((updates.sold_price_cop / fxRate) * 100) / 100;
+  }
+
   await saveListing(merged, env);
   return jsonResponse(merged, 200, env);
 }
