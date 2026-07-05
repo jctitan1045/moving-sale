@@ -5,6 +5,19 @@ const CONDITIONS = ["new", "like_new", "good", "fair", "worn"];
 // listing (see worker.js), so nudging the condition here moves the price the
 // same direction/magnitude the AI would have priced it at for that condition.
 const CONDITION_MULTIPLIER = { new: 0.925, like_new: 0.775, good: 0.625, fair: 0.475, worn: 0.325 };
+const CATEGORY_ICONS = {
+  furniture: "🛋️",
+  appliances: "🔌",
+  electronics: "💻",
+  kitchenware: "🍳",
+  decor: "🖼️",
+  clothing: "👕",
+  books: "📚",
+  outdoor: "🌳",
+  sports: "⚽",
+  pet: "🐾",
+  other: "📦",
+};
 const CATEGORY_LABELS = {
   furniture: "Furniture / Muebles",
   appliances: "Appliances / Electrodomésticos",
@@ -318,6 +331,27 @@ async function saveFxRate() {
   alert("Exchange rate saved. It applies to listings saved/published from now on.");
 }
 
+function renderGrouped(items, cardFn, emptyMessage) {
+  if (!items.length) return `<div class="empty-state">${emptyMessage}</div>`;
+
+  const sections = CATEGORIES
+    .map((cat) => ({
+      cat,
+      items: items.filter((l) => l.category === cat),
+    }))
+    .filter((s) => s.items.length > 0);
+
+  const uncategorized = items.filter((l) => !CATEGORIES.includes(l.category));
+  if (uncategorized.length) sections.push({ cat: null, items: uncategorized });
+
+  return sections.map((s) => `
+    <div class="category-section">
+      <h3 class="category-heading">${CATEGORY_ICONS[s.cat] || "📦"} ${CATEGORY_LABELS[s.cat] || "Other / Otro"} (${s.items.length})</h3>
+      ${s.items.map(cardFn).join("")}
+    </div>
+  `).join("");
+}
+
 function renderTotals() {
   const active = allPublished.filter((l) => l.status !== "sold");
   const sold = allPublished.filter((l) => l.status === "sold");
@@ -338,15 +372,11 @@ async function loadAll() {
 
   const draftsResp = await fetch(`${WORKER_BASE_URL}/api/admin/drafts`, { headers: authHeaders() });
   allDrafts = await draftsResp.json();
-  document.getElementById("drafts").innerHTML = allDrafts.length
-    ? allDrafts.map(draftCard).join("")
-    : `<div class="empty-state">No pending drafts.</div>`;
+  document.getElementById("drafts").innerHTML = renderGrouped(allDrafts, draftCard, "No pending drafts.");
 
   const listingsResp = await fetch(`${WORKER_BASE_URL}/api/listings`);
   allPublished = await listingsResp.json();
-  document.getElementById("published").innerHTML = allPublished.length
-    ? allPublished.map(publishedCard).join("")
-    : `<div class="empty-state">Nothing published yet.</div>`;
+  document.getElementById("published").innerHTML = renderGrouped(allPublished, publishedCard, "Nothing published yet.");
 
   renderTotals();
 }
