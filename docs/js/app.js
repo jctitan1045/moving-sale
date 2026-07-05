@@ -183,7 +183,7 @@ function renderListings() {
 
   grid.innerHTML = sections.map((s) => `
     <div class="category-section">
-      <h2 class="category-heading">${CATEGORY_ICONS[s.cat] || "📦"} ${CATEGORY_LABELS[s.cat] || s.cat}</h2>
+      <h2 class="category-heading">${CATEGORY_ICONS[s.cat] || "📦"} ${CATEGORY_LABELS[s.cat] || s.cat} (${s.items.length})</h2>
       <div class="grid">
         ${s.items.map((l) => cardHtml(l, cart)).join("")}
       </div>
