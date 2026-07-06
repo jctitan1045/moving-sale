@@ -1,3 +1,20 @@
+## 2026-07-06 [tool: Claude Code]
+
+**Focus:** Storefront image lightbox — click any card image to view it full-screen.
+
+**What happened:**
+- Added a full-screen lightbox to the storefront: clicking a card image opens it on a dark backdrop, with ‹ › arrows + dot indicators for multi-photo listings (arrows hidden for single-photo). Closes via backdrop click, ✕ button, or Esc; ← / → navigate. Background scroll locked while open.
+- Reused the existing carousel styling conventions. Card images now show a `zoom-in` cursor.
+- Verified in preview against mock listings (the live Worker's CORS blocks localhost, so real listings don't load in the preview) — open on click, image cycling with wraparound + matching dots, nav hidden for single-image, closes on backdrop/Esc but not on image-click.
+- Deployed: committed + pushed to `main` (commit 20c4207) → GitHub Pages auto-redeploy.
+
+**Decisions:**
+- [DECISION] Lightbox on the storefront only. Admin page keeps its flat removable thumbnail strip — review wants everything visible at once, not a paged viewer.
+
+**Files touched:** `docs/index.html`, `docs/js/app.js`, `docs/css/style.css`
+
+---
+
 ## 2026-07-04 14:25, [tool: Claude Code]
 
 **Focus:** Multi-photo listings (batched WhatsApp sends → one listing with a carousel), plus a run of smaller storefront UX iterations (category headings, bilingual category labels, alphabetical sort, payment badges, pickup map).
