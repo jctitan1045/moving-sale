@@ -63,6 +63,14 @@
 
   <div class="overlay" id="overlay"></div>
 
+  <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+    <button class="lightbox-close" onclick="closeLightbox(event, true)" aria-label="Close">✕</button>
+    <button class="lightbox-nav prev" onclick="lightboxNav(event, -1)" aria-label="Previous">‹</button>
+    <img id="lightboxImg" src="" alt="">
+    <button class="lightbox-nav next" onclick="lightboxNav(event, 1)" aria-label="Next">›</button>
+    <div class="lightbox-dots" id="lightboxDots"></div>
+  </div>
+
   <div class="cart-drawer" id="cartDrawer">
     <button class="secondary" id="cartClose" style="align-self:flex-end;">Close ✕</button>
     <h2>Your cart</h2>

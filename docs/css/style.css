@@ -201,6 +201,7 @@ main {
   aspect-ratio: 1 / 1;
   object-fit: cover;
   background: #eee;
+  cursor: zoom-in;
 }
 
 .card-image-wrap {
@@ -245,6 +246,84 @@ main {
 .carousel-dots .dot.active {
   background: white;
 }
+
+/* Full-size image viewer */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 30;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox.open { display: flex; }
+
+.lightbox img {
+  max-width: 92vw;
+  max-height: 88vh;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  font-size: 1.3rem;
+  line-height: 1;
+  border: none;
+}
+
+.lightbox-close:hover { background: rgba(0, 0, 0, 0.75); }
+
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  font-size: 1.8rem;
+  line-height: 1;
+  border: none;
+}
+
+.lightbox-nav:hover { background: rgba(0, 0, 0, 0.75); }
+.lightbox-nav.prev { left: 1rem; }
+.lightbox-nav.next { right: 1rem; }
+
+/* Prevent background scroll while the lightbox is open */
+body.lightbox-open { overflow: hidden; }
+
+.lightbox-dots {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.4rem;
+}
+
+.lightbox-dots .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.lightbox-dots .dot.active { background: white; }
 
 .card-body {
   padding: 0.75rem;

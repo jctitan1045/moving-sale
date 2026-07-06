@@ -107,6 +107,43 @@ function carouselNav(id, delta, total) {
   renderListings();
 }
 
+// --- Lightbox (full-size image viewer) ---
+let lightboxImages = [];
+let lightboxIdx = 0;
+
+function openLightbox(id, startIdx) {
+  const listing = listings.find((l) => l.id === id);
+  if (!listing) return;
+  lightboxImages = imagesOf(listing);
+  if (!lightboxImages.length) return;
+  lightboxIdx = Math.min(startIdx || 0, lightboxImages.length - 1);
+  renderLightbox();
+  document.getElementById("lightbox").classList.add("open");
+  document.body.classList.add("lightbox-open");
+}
+
+function renderLightbox() {
+  document.getElementById("lightboxImg").src = `${WORKER_BASE_URL}/images/${lightboxImages[lightboxIdx]}`;
+  const multi = lightboxImages.length > 1;
+  document.querySelectorAll("#lightbox .lightbox-nav").forEach((b) => { b.style.display = multi ? "" : "none"; });
+  const dots = document.getElementById("lightboxDots");
+  dots.innerHTML = multi ? lightboxImages.map((_, i) => `<span class="dot ${i === lightboxIdx ? "active" : ""}"></span>`).join("") : "";
+}
+
+function lightboxNav(event, delta) {
+  if (event) event.stopPropagation();
+  const total = lightboxImages.length;
+  lightboxIdx = (lightboxIdx + delta + total) % total;
+  renderLightbox();
+}
+
+// Closes on the close button (force) or a backdrop click, but not clicks on the image itself.
+function closeLightbox(event, force) {
+  if (!force && event && event.target.id !== "lightbox") return;
+  document.getElementById("lightbox").classList.remove("open");
+  document.body.classList.remove("lightbox-open");
+}
+
 function cardHtml(l, cart) {
   const max = invOf(l);
   const inCart = cart[l.id] || 0;
@@ -120,7 +157,7 @@ function cardHtml(l, cart) {
   return `
     <div class="card">
       <div class="card-image-wrap">
-        <img src="${WORKER_BASE_URL}/images/${imgs[idx]}" alt="${escapeHtml(titleEn(l))}" loading="lazy">
+        <img src="${WORKER_BASE_URL}/images/${imgs[idx]}" alt="${escapeHtml(titleEn(l))}" loading="lazy" onclick="openLightbox('${l.id}', ${idx})">
         ${imgs.length > 1 ? `
           <button class="carousel-nav prev" onclick="carouselNav('${l.id}', -1, ${imgs.length})">‹</button>
           <button class="carousel-nav next" onclick="carouselNav('${l.id}', 1, ${imgs.length})">›</button>
@@ -287,6 +324,13 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("cartClose").addEventListener("click", () => toggleCart(false));
   document.getElementById("overlay").addEventListener("click", () => toggleCart(false));
   document.getElementById("whatsappBtn").addEventListener("click", openWhatsAppCheckout);
+
+  document.addEventListener("keydown", (e) => {
+    if (!document.getElementById("lightbox").classList.contains("open")) return;
+    if (e.key === "Escape") closeLightbox(null, true);
+    else if (e.key === "ArrowLeft" && lightboxImages.length > 1) lightboxNav(null, -1);
+    else if (e.key === "ArrowRight" && lightboxImages.length > 1) lightboxNav(null, 1);
+  });
 
   loadListings();
 });
