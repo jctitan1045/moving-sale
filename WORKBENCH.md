@@ -1,6 +1,11 @@
-## 2026-07-06 [tool: Claude Code]
+## 2026-07-07 17:28, Claude Code
 
 **Focus:** Storefront image lightbox — click any card image to view it full-screen.
+
+**Next session, start here:**
+- Read: `worker/worker.js`'s `processPhotoIntake` for the batching logic
+- In flight: multi-photo WhatsApp batching remains deployed but never tested with a real photo burst
+- Single next move: send 2-3 photos of one item within ~60s and confirm they land as one listing with a working carousel
 
 **What happened:**
 - Added a full-screen lightbox to the storefront: clicking a card image opens it on a dark backdrop, with ‹ › arrows + dot indicators for multi-photo listings (arrows hidden for single-photo). Closes via backdrop click, ✕ button, or Esc; ← / → navigate. Background scroll locked while open.
@@ -11,7 +16,10 @@
 **Decisions:**
 - [DECISION] Lightbox on the storefront only. Admin page keeps its flat removable thumbnail strip — review wants everything visible at once, not a paged viewer.
 
-**Files touched:** `docs/index.html`, `docs/js/app.js`, `docs/css/style.css`
+**Still open:**
+- Real-photo-burst test of multi-photo batching (carried over, still untested).
+
+**Files touched:** `docs/index.html`, `docs/js/app.js`, `docs/css/style.css`, `WORKBENCH.md`
 
 ---
 

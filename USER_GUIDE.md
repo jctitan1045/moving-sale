@@ -44,6 +44,8 @@ You text a photo of something you're selling to your WhatsApp number. AI drafts 
 
 **A listing's photo isn't showing.** Reload — it can take up to about a minute for a just-published listing to be visible everywhere (Cloudflare KV propagation).
 
+**Can buyers see a bigger version of a photo?** Yes — on the storefront, clicking any item photo opens it full-screen. Multi-photo listings get prev/next arrows and dots; close with the ✕, the Esc key, or by clicking outside the image.
+
 ## When something breaks
 
 Check the browser console on the page that's misbehaving first. For anything server-side, `npx wrangler tail` (run from `moving-sale/worker/`) streams live logs from the Worker while you reproduce the issue.
