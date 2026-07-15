@@ -19,6 +19,7 @@
       <h1>Moving Sale — Admin</h1>
       <div class="controls">
         <button class="secondary" id="refreshBtn">Refresh</button>
+        <button class="secondary" id="rescanDupesBtn">Scan for duplicates</button>
         <a href="index.html" class="storefront-link" style="margin-left:0.5rem;">View storefront ↗</a>
         <div style="margin-left:auto;display:flex;gap:0.5rem;align-items:center;">
           <label for="fxRate" style="font-size:0.85rem;">COP per USD:</label>
@@ -32,7 +33,7 @@
       <div id="totals" class="totals-box"></div>
 
       <div class="admin-section">
-        <h2>Pending drafts</h2>
+        <h2>Pending drafts <span id="draftsCount" class="section-count"></span></h2>
         <div id="drafts"></div>
       </div>
 

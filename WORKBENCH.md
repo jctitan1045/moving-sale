@@ -1,3 +1,32 @@
+## 2026-07-15, Claude Code
+
+**Focus:** Replace time-based photo batching with content-based (AI) same-item grouping; add duplicate-listing detection flagged in admin; add a photo-split tool to fix over-grouped listings.
+
+**Next session, start here:**
+- **Not deployed yet.** Run `cd worker && npx wrangler deploy` to make any of this live. Frontend is verified in a local preview; the worker logic is written but untested against the real WhatsApp/Anthropic path.
+- Single next move: deploy, then send a burst of photos of *different* items and confirm they land as separate listings (the whole point of this change).
+- Then use admin → "Split into separate items" on the stuck 50-photo mega-listing to fan it out.
+
+**What happened:**
+- **Grouping is now content-based, not time-based.** Removed `BATCH_WINDOW_MS` (60s window that lumped every burst photo into one listing). New `RECENT_DRAFT_WINDOW_MS` (15min) only bounds which recent draft is the *comparison anchor*. On each incoming photo, if the sender has a recent draft, its first image is sent to the vision model alongside the new photo, and a new `is_same_item_as_reference` boolean on the `create_listing` tool decides: same physical unit → append as another angle; different item → new listing. KV pointer renamed `pending_batch:` → `recent_draft:`.
+- Refactored the intake AI call into a reusable `analyzePhoto({ reference })` + `buildListingObject()` so the same drafting path is shared by intake and split.
+- **Duplicate detection, two tiers:** (1) automatic at draft creation — `findPossibleDuplicates()` flags same-category listings with ≥60% title-token overlap, stored on `listing.possible_duplicate_of`; the WhatsApp confirmation notes a possible dupe. (2) On-demand `POST /api/admin/rescan-duplicates` — hands the whole catalog (titles/categories) to the model via a `report_duplicate_groups` tool for a semantic pass that catches synonyms/translations, then rewrites every listing's `possible_duplicate_of`. Admin shows a clickable orange "⚠️ Possible duplicate (N)" badge that scrolls to + flashes the match; header has a "Scan for duplicates" button.
+- **Photo split:** `POST /api/admin/split-photo {listing_id, image_key}` re-drafts one photo into its own listing (reusing the existing image bytes). Admin "Split into separate items (N)" button on any multi-photo draft loops one request per photo (keeps each call small — avoids Worker subrequest limits on a 50-photo split), then detaches images from the original (`image_keys:[]`) and deletes it so shared bytes survive.
+
+**Decisions:**
+- [DECISION] Rescan uses a *text/semantic* pass (titles+categories in one call), not vision over every image — impractical/costly at catalog scale. The cheap token-overlap check runs inline at creation; the AI pass is the "deeper" on-demand option.
+- [DECISION] Split is client-orchestrated (one request per photo) rather than one big server request, to stay under Cloudflare per-request subrequest limits for large batches.
+
+**Verified:** Local static preview (`moving-sale-docs`) with injected mock listings — dup badge renders with correct count, split button appears only on multi-photo drafts with correct count, "Scan for duplicates" present, badge-click applies the flash-highlight. `node --check` passes on worker.js and admin.js. Worker path (vision same-item call, rescan, split) NOT yet exercised live — needs deploy.
+
+**Still open:**
+- Deploy + real-photo verification of all three features (carried into TODOS).
+- Race note: a 50-photo burst hits the webhook near-concurrently, so the "recent draft" anchor each photo compares against can be stale — same-item grouping is best-effort at high burst rates; mis-groups are correctable via Split / manual merge.
+
+**Files touched:** `worker/worker.js`, `docs/js/admin.js`, `docs/admin.html`, `docs/css/style.css`, `WORKBENCH.md`, `TODOS.md`
+
+---
+
 ## 2026-07-07 17:28, Claude Code
 
 **Focus:** Storefront image lightbox — click any card image to view it full-screen.

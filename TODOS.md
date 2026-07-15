@@ -1,9 +1,11 @@
 # TODOs
 
-Last updated: 2026-07-04
+Last updated: 2026-07-15
 
 ## Next
-- [ ] Send a real burst of 2-3 photos of one item within ~60s and confirm they group into a single listing with a carousel (multi-photo batching just built, untested live)
+- [x] **Deploy the worker** — done 2026-07-15 (Version live at moving-sale-worker.jctitan.workers.dev; new /split-photo + /rescan-duplicates routes confirmed live).
+- [ ] After deploy: send a few photos of DIFFERENT items in a burst and confirm they now become separate listings (not one). Then send 2-3 angles of ONE item and confirm they still merge.
+- [ ] After deploy: open the stuck 50-photo listing in admin → click "Split into separate items" → confirm it fans out into ~50 AI-drafted drafts, then review them.
 - [ ] Decide whether the repo should stay public or move private
 
 ## Soon

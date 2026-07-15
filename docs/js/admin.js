@@ -124,6 +124,24 @@ function modeBadge(mode) {
   return `<span class="mode-badge live">🟢 Live</span>`;
 }
 
+function duplicateBadge(l) {
+  const dups = l.possible_duplicate_of || [];
+  if (!dups.length) return "";
+  const count = dups.length > 1 ? ` (${dups.length})` : "";
+  return `<span class="dup-badge" onclick="focusListing('${dups[0]}')" title="Possible duplicate of another listing — click to jump to it">⚠️ Possible duplicate${count}</span>`;
+}
+
+function focusListing(id) {
+  const el = document.querySelector(`.admin-item[data-id="${id}"]`);
+  if (!el) {
+    alert("The matching listing isn't in the current view — it may have already been handled or deleted.");
+    return;
+  }
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  el.classList.add("dup-flash");
+  setTimeout(() => el.classList.remove("dup-flash"), 2000);
+}
+
 function editableFields(l) {
   return `
     <div><label>Title (English)</label><input class="f-title-en" value="${escapeHtml(titleEn(l))}"></div>
@@ -196,6 +214,7 @@ function draftCard(l) {
       <img src="${WORKER_BASE_URL}/images/${imagesOf(l)[0]}" alt="">
       <div class="admin-fields">
         ${modeBadge("draft")}
+        ${duplicateBadge(l)}
         ${savedFlash(l.id)}
         ${l.price_new_cop ? `<div class="ai-price-note">AI reasoning: new ≈ ${l.price_new_cop.toLocaleString()} COP → floor ${l.price_cop_min.toLocaleString()} / offer ${l.price_cop_max.toLocaleString()}</div>` : ""}
         ${photoStrip(l)}
@@ -203,6 +222,7 @@ function draftCard(l) {
         <div class="admin-actions">
           <button onclick="publishDraft('${l.id}')">Publish</button>
           <button class="secondary" onclick="saveEdits('${l.id}', false)">Save edits</button>
+          ${imagesOf(l).length > 1 ? `<button class="secondary split-btn" onclick="splitListing('${l.id}')">Split into separate items (${imagesOf(l).length})</button>` : ""}
           <button class="danger" onclick="deleteListing('${l.id}')">Delete</button>
         </div>
       </div>
@@ -218,6 +238,7 @@ function publishedCard(l) {
       <div class="admin-fields">
         <span class="badge ${l.status === "sold" ? "sold" : ""}">${l.status}</span>
         ${modeBadge(editing ? "editing" : "live")}
+        ${duplicateBadge(l)}
         ${savedFlash(l.id)}
         ${photoStrip(l)}
         ${editing ? editableFields(l) : readOnlyFields(l)}
@@ -313,6 +334,58 @@ async function removePhoto(id, index) {
   loadAll();
 }
 
+async function splitListing(id) {
+  const listing = allDrafts.find((l) => l.id === id) || allPublished.find((l) => l.id === id);
+  if (!listing) return;
+  const imgs = imagesOf(listing);
+  if (imgs.length < 2) return;
+  if (!confirm(`Split this listing's ${imgs.length} photos into ${imgs.length} separate drafts? Each photo becomes its own AI-drafted listing. / ¿Separar en ${imgs.length} anuncios independientes?`)) return;
+
+  const card = document.querySelector(`.admin-item[data-id="${id}"]`);
+  const btn = card ? card.querySelector(".split-btn") : null;
+  if (btn) btn.disabled = true;
+
+  // One request per photo keeps each call small (well under the Worker subrequest limit
+  // for a big batch). The original is left untouched until every photo has been extracted.
+  for (let i = 0; i < imgs.length; i++) {
+    if (btn) btn.textContent = `Splitting ${i + 1}/${imgs.length}…`;
+    const resp = await fetch(`${WORKER_BASE_URL}/api/admin/split-photo`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ listing_id: id, image_key: imgs[i] }),
+    });
+    if (!resp.ok) {
+      alert(`Split failed on photo ${i + 1} of ${imgs.length}. Stopping — the original listing is untouched, though ${i} new draft(s) were already created.`);
+      if (btn) { btn.disabled = false; btn.textContent = `Split into separate items (${imgs.length})`; }
+      loadAll();
+      return;
+    }
+  }
+
+  // Detach the (now shared) images from the original before deleting it, so the delete
+  // doesn't remove image bytes the new drafts point at. Then remove the empty original.
+  await patchListing(id, { image_keys: [] });
+  await fetch(`${WORKER_BASE_URL}/api/admin/listings/${id}`, { method: "DELETE", headers: authHeaders() });
+  loadAll();
+}
+
+async function rescanDuplicates() {
+  const btn = document.getElementById("rescanDupesBtn");
+  if (btn) { btn.disabled = true; btn.textContent = "Scanning…"; }
+  try {
+    const resp = await fetch(`${WORKER_BASE_URL}/api/admin/rescan-duplicates`, { method: "POST", headers: authHeaders() });
+    if (!resp.ok) throw new Error("bad status");
+    const data = await resp.json();
+    await loadAll();
+    const n = (data.groups || []).length;
+    alert(n ? `Found ${n} possible duplicate group${n > 1 ? "s" : ""}, flagged below with a ⚠️ badge.` : "No likely duplicates found.");
+  } catch (e) {
+    alert("Duplicate scan failed. Try again.");
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Scan for duplicates"; }
+  }
+}
+
 async function loadFxRate() {
   const resp = await fetch(`${WORKER_BASE_URL}/api/admin/config`, { headers: authHeaders() });
   const data = await resp.json();
@@ -376,6 +449,7 @@ async function loadAll() {
 
   const draftsResp = await fetch(`${WORKER_BASE_URL}/api/admin/drafts`, { headers: authHeaders() });
   allDrafts = await draftsResp.json();
+  document.getElementById("draftsCount").textContent = allDrafts.length ? `${allDrafts.length} pending` : "";
   document.getElementById("drafts").innerHTML = renderGrouped(allDrafts, draftCard, "No pending drafts.");
 
   const listingsResp = await fetch(`${WORKER_BASE_URL}/api/listings`);
@@ -389,6 +463,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("unlockBtn").addEventListener("click", unlock);
   document.getElementById("saveFxRateBtn").addEventListener("click", saveFxRate);
   document.getElementById("refreshBtn").addEventListener("click", loadAll);
+  document.getElementById("rescanDupesBtn").addEventListener("click", rescanDuplicates);
   document.getElementById("fxRate").addEventListener("input", refreshAllPricePreviews);
 
   if (getToken()) {

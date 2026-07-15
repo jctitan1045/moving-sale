@@ -542,6 +542,33 @@ body.lightbox-open { overflow: hidden; }
 .mode-badge.editing { background: #fdf1d6; color: #8a6416; }
 .mode-badge.draft { background: #eee; color: var(--muted); }
 
+.dup-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.55rem;
+  border-radius: 4px;
+  background: #fdece0;
+  color: #a5471a;
+  width: fit-content;
+  cursor: pointer;
+}
+
+.section-count {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: #eee;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+.admin-item.dup-flash {
+  outline: 2px solid #e0863a;
+  outline-offset: 2px;
+}
+
 .ai-price-note {
   font-size: 0.75rem;
   color: var(--muted);
