@@ -188,6 +188,25 @@ function cardHtml(l, cart) {
   `;
 }
 
+// Builds the category dropdown from the currently-loaded listings, appending a
+// live item count per category and hiding categories that have nothing for sale.
+// Preserves the current selection when that category still has items.
+function populateCategoryFilter() {
+  const select = document.getElementById("categoryFilter");
+  const prev = select.value;
+  const available = listings.filter((l) => l.status !== "sold");
+  const counts = {};
+  available.forEach((l) => { counts[l.category] = (counts[l.category] || 0) + 1; });
+
+  const options = [`<option value="">All categories / Todas las categorías (${available.length})</option>`];
+  CATEGORIES.forEach((c) => {
+    const n = counts[c] || 0;
+    if (n > 0) options.push(`<option value="${c}">${CATEGORY_LABELS[c]} (${n})</option>`);
+  });
+  select.innerHTML = options.join("");
+  select.value = prev && counts[prev] ? prev : "";
+}
+
 function renderListings() {
   const grid = document.getElementById("grid");
   const categoryFilter = document.getElementById("categoryFilter").value;
@@ -307,6 +326,7 @@ async function loadListings() {
   try {
     const resp = await fetch(`${WORKER_BASE_URL}/api/listings`);
     listings = await resp.json();
+    populateCategoryFilter();
     renderListings();
     renderCart();
   } catch (err) {
@@ -316,8 +336,7 @@ async function loadListings() {
 
 document.addEventListener("DOMContentLoaded", () => {
   const categorySelect = document.getElementById("categoryFilter");
-  categorySelect.innerHTML = `<option value="">All categories / Todas las categorías</option>` +
-    CATEGORIES.map((c) => `<option value="${c}">${CATEGORY_LABELS[c]}</option>`).join("");
+  categorySelect.innerHTML = `<option value="">All categories / Todas las categorías</option>`;
   categorySelect.addEventListener("change", renderListings);
 
   document.getElementById("cartToggle").addEventListener("click", () => toggleCart(true));
