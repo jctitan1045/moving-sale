@@ -554,6 +554,11 @@ body.lightbox-open { overflow: hidden; }
   cursor: pointer;
 }
 
+.muted-note {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
 .section-count {
   font-size: 0.8rem;
   font-weight: 600;

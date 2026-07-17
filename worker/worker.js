@@ -507,6 +507,49 @@ async function handleRescanDuplicates(env) {
   return jsonResponse({ groups, updated }, 200, env);
 }
 
+// --- Storefront analytics (Cloudflare Web Analytics) ---
+
+// Pageview/visit counts for the storefront, read from Cloudflare's GraphQL
+// analytics API. This runs server-side because the API token must never reach
+// the browser — admin.html is a public static page. Cached in KV so repeated
+// admin refreshes don't hammer the API (and stay well inside rate limits).
+const ANALYTICS_CACHE_TTL_S = 300;
+
+async function handleGetAnalytics(env) {
+  if (!env.CF_ANALYTICS_TOKEN || !env.CF_ACCOUNT_ID || !env.CF_SITE_TAG) {
+    return jsonResponse({ error: "analytics not configured", detail: "Set the CF_ANALYTICS_TOKEN, CF_ACCOUNT_ID and CF_SITE_TAG secrets on the Worker." }, 501, env);
+  }
+
+  const cached = await env.KV.get("cache:analytics");
+  if (cached) return jsonResponse({ ...JSON.parse(cached), cached: true }, 200, env);
+
+  const iso = (d) => d.toISOString().replace(/\.\d{3}Z$/, "Z");
+  const now = new Date();
+  const until = iso(now);
+  const since = (days) => iso(new Date(now.getTime() - days * 24 * 3600 * 1000));
+
+  // rumPageloadEventsAdaptiveGroups: `count` = pageviews, `sum.visits` = visits.
+  const bucket = (alias, from) => `${alias}: rumPageloadEventsAdaptiveGroups(limit:1, filter:{siteTag:"${env.CF_SITE_TAG}", datetime_geq:"${from}", datetime_leq:"${until}"}) { count sum { visits } }`;
+  const query = `query { viewer { accounts(filter:{accountTag:"${env.CF_ACCOUNT_ID}"}) { ${bucket("day", since(1))} ${bucket("week", since(7))} ${bucket("month", since(30))} } } }`;
+
+  const resp = await fetch("https://api.cloudflare.com/client/v4/graphql", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${env.CF_ANALYTICS_TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ query }),
+  });
+  const data = await resp.json();
+  const acct = data?.data?.viewer?.accounts?.[0];
+  if (!acct) {
+    return jsonResponse({ error: "analytics query failed", detail: JSON.stringify(data?.errors || data).slice(0, 300) }, 502, env);
+  }
+
+  const pick = (arr) => ({ views: arr?.[0]?.count || 0, visits: arr?.[0]?.sum?.visits || 0 });
+  const result = { day: pick(acct.day), week: pick(acct.week), month: pick(acct.month), updated_at: until };
+  await env.KV.put("cache:analytics", JSON.stringify(result), { expirationTtl: ANALYTICS_CACHE_TTL_S });
+
+  return jsonResponse(result, 200, env);
+}
+
 async function handleGetConfig(env) {
   const fxRate = await getFxRate(env);
   return jsonResponse({ fx_rate: fxRate }, 200, env);
@@ -575,6 +618,11 @@ export default {
       if (request.method === "DELETE" && path.startsWith("/api/admin/listings/")) {
         if (!isAdminAuthorized(request, env)) return jsonResponse({ error: "unauthorized" }, 401, env);
         return await handleDeleteListing(path.replace("/api/admin/listings/", ""), env);
+      }
+
+      if (request.method === "GET" && path === "/api/admin/analytics") {
+        if (!isAdminAuthorized(request, env)) return jsonResponse({ error: "unauthorized" }, 401, env);
+        return await handleGetAnalytics(env);
       }
 
       if (request.method === "GET" && path === "/api/admin/config") {

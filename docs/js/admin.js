@@ -386,6 +386,27 @@ async function rescanDuplicates() {
   }
 }
 
+// Storefront view counts, proxied through the Worker (the Cloudflare API token
+// can't live in this page). Never blocks the rest of the admin panel from loading.
+async function loadAnalytics() {
+  const el = document.getElementById("analytics");
+  if (!el) return;
+  try {
+    const resp = await fetch(`${WORKER_BASE_URL}/api/admin/analytics`, { headers: authHeaders() });
+    const d = await resp.json();
+    if (!resp.ok) {
+      el.innerHTML = `<div class="muted-note">👁 Storefront views unavailable — ${escapeHtml(d.detail || d.error || "unknown error")}</div>`;
+      return;
+    }
+    el.innerHTML = `
+      <div><strong>👁 Storefront views</strong> — ${d.day.views.toLocaleString()} last 24h · ${d.week.views.toLocaleString()} last 7 days · ${d.month.views.toLocaleString()} last 30 days</div>
+      <div class="muted-note">${d.week.visits.toLocaleString()} visits in the last 7 days · admin page is not tracked</div>
+    `;
+  } catch (e) {
+    el.innerHTML = `<div class="muted-note">👁 Storefront views unavailable — couldn't reach the analytics endpoint.</div>`;
+  }
+}
+
 async function loadFxRate() {
   const resp = await fetch(`${WORKER_BASE_URL}/api/admin/config`, { headers: authHeaders() });
   const data = await resp.json();
@@ -446,6 +467,7 @@ function renderTotals() {
 
 async function loadAll() {
   await loadFxRate();
+  loadAnalytics();
 
   const draftsResp = await fetch(`${WORKER_BASE_URL}/api/admin/drafts`, { headers: authHeaders() });
   allDrafts = await draftsResp.json();
