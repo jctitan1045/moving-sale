@@ -274,8 +274,8 @@ function renderCart() {
   list.innerHTML = ids.map((id) => {
     const listing = listings.find((l) => l.id === id);
     if (!listing) return "";
-    totalCop += listing.price_cop_max * cart[id];
-    totalUsd += listing.price_usd_max * cart[id];
+    totalCop += (listing.price_cop_max || 0) * cart[id];
+    totalUsd += (listing.price_usd_max || 0) * cart[id];
     return `
       <div class="cart-line">
         <span class="name">${escapeHtml(titleEn(listing))}</span>
@@ -298,13 +298,23 @@ function toggleCart(open) {
 
 function whatsAppCheckoutMessage() {
   const cart = getCart();
+  let totalCop = 0;
+  let totalUsd = 0;
+
   const lines = Object.entries(cart).map(([id, qty]) => {
     const listing = listings.find((l) => l.id === id);
     const name = listing ? titleEn(listing) : id;
     const price = listing ? `(${fmtCopShort(listing.price_cop_max)} COP, obo)` : "";
+    if (listing) {
+      totalCop += (listing.price_cop_max || 0) * qty;
+      totalUsd += (listing.price_usd_max || 0) * qty;
+    }
     return qty > 1 ? `- ${name} x${qty} ${price}` : `- ${name} ${price}`;
   });
-  return `Hi! I'm interested in these items from the moving sale:\n${lines.join("\n")}\n\nDo you still have them?`;
+
+  // Same total the buyer sees in the cart drawer, so the message they send matches it.
+  const total = `Total (suggested): ${fmtCop(totalCop)} · ${fmtUsd(totalUsd)}`;
+  return `Hi! I'm interested in these items from the moving sale:\n${lines.join("\n")}\n\n${total}\n\nDo you still have them?`;
 }
 
 function openWhatsAppCheckout() {
