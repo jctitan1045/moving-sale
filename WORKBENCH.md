@@ -1,3 +1,35 @@
+## 2026-07-17 09:20, Claude Code
+
+**Focus:** Ship the content-based grouping work (deploy + push), then a run of storefront/admin additions: category counts, WhatsApp cart total, and Cloudflare Web Analytics wired through to admin.
+
+**Next session, start here:**
+- Read: `worker/worker.js` — `processPhotoIntake` (grouping) and `handleGetAnalytics` (views)
+- In flight: nothing half-built; everything below is deployed and live
+- Single next move: work out why ~52 of the first 65 listings landed in `decor` — check whether the AI intake prompt is over-assigning that category, since it makes the storefront filter near-useless
+
+**What happened:**
+- Deployed the Worker and pushed `docs/` — the previous session's grouping/dupe/split work is now live. Confirmed new routes return 401 (not 404) after edge propagation lag.
+- Storefront: category dropdown now shows live per-category item counts and hides empty categories; WhatsApp checkout message now includes a `Total (suggested)` line summing the cart (quantities respected), matching the drawer total.
+- Admin: added a "N pending" count on the drafts heading.
+- Analytics: added the Cloudflare Web Analytics beacon to the storefront (`index.html` only — admin deliberately untracked), created the RUM site, and added an admin-gated `GET /api/admin/analytics` that proxies Cloudflare's GraphQL RUM dataset server-side and renders views for 24h/7d/30d in admin.
+- Fixed a latent `$NaN USD` in the cart drawer when a listing lacks a price (guarded with `|| 0`); confirmed all 108 live listings currently have prices, so it was never buyer-facing.
+
+**Decisions:**
+- [DECISION] Analytics is proxied through the Worker rather than called from admin.html, because admin is a public static page and the API token would be readable by anyone.
+- [DECISION] Used a scoped read-only Cloudflare token (Account Analytics: Read) as `CF_ANALYTICS_TOKEN` rather than reusing the deploy-capable token — verified it can read RUM and is blocked from Workers. `CF_ACCOUNT_ID`/`CF_SITE_TAG` are secrets too, keeping Cloudflare identifiers out of the public repo.
+- [DECISION] Declined to mint the API token via browser automation despite an active session — creating credentials in the user's cloud account is his to do.
+- [DECISION] Rescan duplicates stays a text/semantic pass, not vision over every image — impractical at catalog scale.
+
+**Still open:**
+- `decor` over-assignment (52/65 at the time; Furniture later showed 7, so it may spread as volume grows).
+- `/twilio-webhook` has no Twilio signature validation — an open endpoint that triggers paid Anthropic calls; the one real hardening item.
+- Admin analytics' authorized path unverified by me (needs the ADMIN_TOKEN); Jordan to confirm the views line renders.
+- Repo is public: fine while the sale runs (no secrets committed), but note Pages on the Free plan requires a public repo — going private would take the storefront offline.
+
+**Files touched:** `worker/worker.js`, `docs/index.html`, `docs/admin.html`, `docs/js/app.js`, `docs/js/admin.js`, `docs/css/style.css`, `WORKBENCH.md`, `TODOS.md`, `ARCHITECTURE.md`, `USER_GUIDE.md`
+
+---
+
 ## 2026-07-15, Claude Code
 
 **Focus:** Replace time-based photo batching with content-based (AI) same-item grouping; add duplicate-listing detection flagged in admin; add a photo-split tool to fix over-grouped listings.
