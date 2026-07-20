@@ -222,6 +222,7 @@ function draftCard(l) {
         <div class="admin-actions">
           <button onclick="publishDraft('${l.id}')">Publish</button>
           <button class="secondary" onclick="saveEdits('${l.id}', false)">Save edits</button>
+          <button class="secondary redraft-btn" onclick="redraftListing('${l.id}')">✨ Fix with AI</button>
           ${imagesOf(l).length > 1 ? `<button class="secondary split-btn" onclick="splitListing('${l.id}')">Split into separate items (${imagesOf(l).length})</button>` : ""}
           <button class="danger" onclick="deleteListing('${l.id}')">Delete</button>
         </div>
@@ -248,6 +249,7 @@ function publishedCard(l) {
             <button class="secondary" onclick="cancelEdit('${l.id}')">Cancel</button>
           ` : `
             <button class="secondary" onclick="enterEdit('${l.id}')">Edit</button>
+            <button class="secondary redraft-btn" onclick="redraftListing('${l.id}')">✨ Fix with AI</button>
           `}
           ${l.status !== "sold" ? `<button class="secondary" onclick="markSold('${l.id}')">Mark sold</button>` : `<button class="secondary" onclick="markAvailable('${l.id}')">Mark available</button>`}
           <button class="danger" onclick="deleteListing('${l.id}')">Delete</button>
@@ -332,6 +334,36 @@ async function removePhoto(id, index) {
   imgs.splice(index, 1);
   await patchListing(id, { image_keys: imgs });
   loadAll();
+}
+
+async function redraftListing(id) {
+  const note = prompt(
+    "What's wrong with this listing? Tell the AI what to fix and it'll re-draft from the photo.\n\n" +
+    "e.g. \"this is a chair, not a table\" · \"it's actually brand new, price higher\" · \"wrong category, it's electronics\" · \"describe the scratch on the lid\""
+  );
+  if (!note || !note.trim()) return;
+
+  const card = document.querySelector(`.admin-item[data-id="${id}"]`);
+  const btn = card ? card.querySelector(".redraft-btn") : null;
+  if (btn) { btn.disabled = true; btn.textContent = "✨ Re-drafting…"; }
+
+  const resp = await fetch(`${WORKER_BASE_URL}/api/admin/listings/${id}/redraft`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ note: note.trim() }),
+  });
+
+  if (!resp.ok) {
+    let detail = "";
+    try { detail = (await resp.json()).error || ""; } catch (e) {}
+    alert(`Re-draft failed. ${detail}`.trim());
+    if (btn) { btn.disabled = false; btn.textContent = "✨ Fix with AI"; }
+    return;
+  }
+
+  justSaved.add(id);
+  loadAll();
+  setTimeout(() => { justSaved.delete(id); loadAll(); }, 1500);
 }
 
 async function splitListing(id) {

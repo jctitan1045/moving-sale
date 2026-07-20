@@ -126,9 +126,16 @@ Write both an English and a Spanish version of the title and description — nat
 // One vision call. When `reference` is supplied (the sender's most recent in-progress
 // draft), the model also decides whether the new photo is the SAME item as the reference
 // via is_same_item_as_reference. Returns the parsed create_listing tool input.
-async function analyzePhoto({ base64Image, contentType, body, reference }, env) {
+async function analyzePhoto({ base64Image, contentType, body, reference, correction }, env) {
   const captionLine = body && body.trim() ? `\n\nCaption from seller: "${body.trim()}"` : "";
   let promptText = PRICING_PROMPT + captionLine;
+
+  // Re-draft: the seller reviewed a previous AI attempt and says what's wrong. Their
+  // correction overrides the photo when they conflict — they can see/hold the item.
+  if (correction && correction.trim()) {
+    promptText += `\n\nIMPORTANT — the seller reviewed a previous AI draft of THIS EXACT item and says it was wrong. Their correction: "${correction.trim()}". Re-analyze the photo and produce a corrected listing that fully addresses this. When the correction conflicts with what the photo alone suggests, trust the seller.`;
+  }
+
   const content = [];
 
   if (reference) {
@@ -442,6 +449,50 @@ async function handleSplitPhoto(request, env) {
   return jsonResponse(listing, 200, env);
 }
 
+// Re-draft an existing listing from its own photo plus the seller's free-text note about
+// what the previous AI attempt got wrong. Overwrites the AI-authored fields (titles,
+// description, category, condition, prices) and preserves identity, photos, status,
+// timestamps and inventory.
+async function handleRedraftListing(id, request, env) {
+  const listing = await getListing(id, env);
+  if (!listing) return jsonResponse({ error: "not found" }, 404, env);
+
+  const { note } = await request.json();
+  if (!note || !note.trim()) return jsonResponse({ error: "note required" }, 400, env);
+
+  const imgKey = imagesOfListing(listing)[0];
+  const img = imgKey ? await env.KV.getWithMetadata(`image:${imgKey}`, { type: "arrayBuffer" }) : null;
+  if (!img || !img.value) return jsonResponse({ error: "listing has no photo to re-analyze" }, 400, env);
+
+  const contentType = img.metadata?.contentType || "image/jpeg";
+  const base64Image = arrayBufferToBase64(img.value);
+  const { parsed, rawText } = await analyzePhoto({ base64Image, contentType, body: "", reference: null, correction: note.trim() }, env);
+
+  if (!parsed || !parsed.title_en || typeof parsed.price_cop_min !== "number") {
+    return jsonResponse({ error: "AI could not re-draft this listing", detail: rawText.slice(0, 200) }, 502, env);
+  }
+
+  const fxRate = await getFxRate(env);
+  const usd = computeUsd(parsed.price_cop_min, parsed.price_cop_max, fxRate);
+  const updated = {
+    ...listing,
+    title_en: parsed.title_en,
+    title_es: parsed.title_es || parsed.title_en,
+    description_en: parsed.description_en || "",
+    description_es: parsed.description_es || parsed.description_en || "",
+    category: parsed.category || listing.category,
+    condition: parsed.condition || listing.condition,
+    price_new_cop: parsed.price_new_cop || null,
+    price_cop_min: parsed.price_cop_min,
+    price_cop_max: parsed.price_cop_max,
+    ...usd,
+  };
+  updated.possible_duplicate_of = await findPossibleDuplicates(updated, env);
+  await saveListing(updated, env);
+
+  return jsonResponse(updated, 200, env);
+}
+
 // Deeper, on-demand duplicate pass: hands every active listing's title/category to the
 // model and asks it to group ones that are the SAME physical item listed more than once
 // (catches synonyms/translations the token heuristic misses). Rewrites each listing's
@@ -608,6 +659,11 @@ export default {
       if (request.method === "POST" && path.startsWith("/api/admin/listings/") && path.endsWith("/photos")) {
         if (!isAdminAuthorized(request, env)) return jsonResponse({ error: "unauthorized" }, 401, env);
         return await handleAddPhoto(path.replace("/api/admin/listings/", "").replace("/photos", ""), request, env);
+      }
+
+      if (request.method === "POST" && path.startsWith("/api/admin/listings/") && path.endsWith("/redraft")) {
+        if (!isAdminAuthorized(request, env)) return jsonResponse({ error: "unauthorized" }, 401, env);
+        return await handleRedraftListing(path.replace("/api/admin/listings/", "").replace("/redraft", ""), request, env);
       }
 
       if (request.method === "PATCH" && path.startsWith("/api/admin/listings/")) {
